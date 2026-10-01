@@ -41,7 +41,7 @@ sudo install plugview-*/plugview /usr/local/bin/
 Downloading with `curl` avoids the Gatekeeper prompt. If you downloaded the archive in a browser, run
 `xattr -d com.apple.quarantine plugview` once before starting it.
 
-**From source** (needs Xcode 16 or later, or its Command Line Tools):
+**From source** (needs Xcode 16.4 or later, or its Command Line Tools):
 
 ```sh
 git clone https://github.com/MauricioLeon54/plugview.git && cd plugview

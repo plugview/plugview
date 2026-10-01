@@ -5,7 +5,7 @@ Apple frameworks only, no third-party dependencies. Changes that keep it that wa
 
 ## Setup
 
-You need macOS 14 or later and Xcode 16 or later (or its Command Line Tools).
+You need macOS 14 or later and Xcode 16.4 or later (or its Command Line Tools). CI tests the oldest and newest toolchains.
 
 ```sh
 git clone https://github.com/MauricioLeon54/plugview.git && cd plugview
