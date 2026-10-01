@@ -104,6 +104,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Reports the connected devices and, when nothing is playing, starts the best one.
     private func attachIfPossible() async {
         send(.devicesChanged(playableVideoDevices(from: DeviceCatalog.videoDevices(), matching: options.videoQuery)))
+        if case .playing(let video) = launcher.state {
+            await attachLateAudio(to: video)
+            return
+        }
         guard attachedDeviceIDs.isEmpty, !isAttaching else { return }
 
         switch launcher.state {
@@ -132,6 +136,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             printError("\(error)")
             send(.playbackFailed(CaptureFailure(deviceName: video.name, reason: "\(error)")))
         }
+    }
+
+    /// Restarts with sound when the card's audio input appears after its video, as it does on a replug.
+    private func attachLateAudio(to video: DeviceInfo) async {
+        let isPlayingWithoutSound = attachedDeviceIDs == [video.uniqueID]
+        guard isPlayingWithoutSound, !isAttaching, options.isAudioEnabled, isAudioPermitted,
+            selectAudioDevice(from: DeviceCatalog.audioDevices(), for: video, matching: options.audioQuery) != nil
+        else { return }
+        await attach(video)
     }
 
     private func selectAudio(for video: DeviceInfo) -> DeviceInfo? {
