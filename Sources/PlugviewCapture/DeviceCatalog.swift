@@ -2,18 +2,18 @@ import AVFoundation
 import PlugviewCore
 
 /// Reads the capture devices macOS currently exposes.
-enum DeviceCatalog {
-    static func videoDevices() -> [DeviceInfo] {
+public enum DeviceCatalog {
+    public static func videoDevices() -> [DeviceInfo] {
         AVCaptureDevice.DiscoverySession(deviceTypes: [.external], mediaType: .video, position: .unspecified)
             .devices.map(makeDeviceInfo)
     }
 
-    static func audioDevices() -> [DeviceInfo] {
+    public static func audioDevices() -> [DeviceInfo] {
         AVCaptureDevice.DiscoverySession(deviceTypes: [.microphone, .external], mediaType: .audio, position: .unspecified)
             .devices.map(makeDeviceInfo)
     }
 
-    static func printDevices() {
+    public static func printDevices() {
         printSection("Video devices", videoDevices())
         print("")
         printSection("Audio inputs", audioDevices())

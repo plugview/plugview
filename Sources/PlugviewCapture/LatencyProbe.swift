@@ -9,7 +9,7 @@ import PlugviewCore
 /// cannot observe (see docs/PERFORMANCE.md for how to measure it with a phone camera).
 ///
 /// `@unchecked Sendable`: the sample arrays are only touched on `queue`.
-final class LatencyProbe: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate,
+public final class LatencyProbe: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureAudioDataOutputSampleBufferDelegate,
     @unchecked Sendable
 {
     private let session = AVCaptureSession()
@@ -21,7 +21,7 @@ final class LatencyProbe: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate
     /// Samples before this host time include start-up work and are ignored.
     private var warmUpEndTime = Double.infinity
 
-    static func run(_ options: RunOptions) async -> Int32 {
+    public static func run(_ options: RunOptions) async -> Int32 {
         guard await Permissions.isGranted(for: .video) else {
             printError(Permissions.cameraDeniedMessage)
             return EXIT_FAILURE
@@ -92,7 +92,7 @@ final class LatencyProbe: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate
         session.addOutput(output)
     }
 
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+    public func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         let now = hostTimeSeconds()
         guard now >= warmUpEndTime else { return }
         let captured = sampleBuffer.presentationTimeStamp.seconds

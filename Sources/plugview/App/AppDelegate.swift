@@ -1,5 +1,6 @@
 import AVFoundation
 import AppKit
+import PlugviewCapture
 import PlugviewCore
 
 /// Wires permissions, device hot-plug, the capture session, and the window together.

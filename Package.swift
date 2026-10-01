@@ -15,9 +15,11 @@ let package = Package(
     ],
     targets: [
         .target(name: "PlugviewCore", swiftSettings: strictSettings),
+        .target(name: "PlugviewCapture", dependencies: ["PlugviewCore"], swiftSettings: strictSettings),
+        .target(name: "PlugviewUI", dependencies: ["PlugviewCore"], swiftSettings: strictSettings),
         .executableTarget(
             name: "plugview",
-            dependencies: ["PlugviewCore"],
+            dependencies: ["PlugviewCore", "PlugviewCapture", "PlugviewUI"],
             exclude: ["Resources/Info.plist"],
             swiftSettings: strictSettings,
             linkerSettings: [
