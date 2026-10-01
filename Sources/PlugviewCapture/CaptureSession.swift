@@ -2,11 +2,11 @@ import AVFoundation
 import PlugviewCore
 
 /// What is on screen after a successful start.
-struct ActiveCapture: Sendable {
-    let videoName: String
-    let audioName: String?
+public struct ActiveCapture: Sendable {
+    public let videoName: String
+    public let audioName: String?
     /// The running mode, with the frame rate read back from the device rather than the one requested.
-    let mode: VideoMode
+    public let mode: VideoMode
 }
 
 enum CaptureError: Error, CustomStringConvertible {
@@ -34,12 +34,14 @@ enum CaptureError: Error, CustomStringConvertible {
 /// `@unchecked Sendable`: every touch of the mutable AVFoundation state below
 /// happens on the serial `queue`, which is the confinement Apple documents for
 /// AVCaptureSession (its start/stop calls block and must stay off the main thread).
-final class CaptureSession: @unchecked Sendable {
-    let session = AVCaptureSession()
+public final class CaptureSession: @unchecked Sendable {
+    public let session = AVCaptureSession()
     private let queue = DispatchQueue(label: "plugview.capture-session", qos: .userInteractive)
     private let audioOutput = AVCaptureAudioPreviewOutput()
 
-    func start(videoID: String, audioID: String?, volume: Float) async throws -> ActiveCapture {
+    public init() {}
+
+    public func start(videoID: String, audioID: String?, volume: Float) async throws -> ActiveCapture {
         try await withCheckedThrowingContinuation { continuation in
             queue.async {
                 continuation.resume(with: Result { try self.startOnQueue(videoID: videoID, audioID: audioID, volume: volume) })
@@ -47,14 +49,14 @@ final class CaptureSession: @unchecked Sendable {
         }
     }
 
-    func stop() {
+    public func stop() {
         queue.async {
             self.session.stopRunning()
             self.removeInputsAndOutputs()
         }
     }
 
-    func setVolume(_ volume: Float) {
+    public func setVolume(_ volume: Float) {
         queue.async { self.audioOutput.volume = volume }
     }
 

@@ -1,4 +1,5 @@
 import AppKit
+import PlugviewCapture
 import PlugviewCore
 
 /// sysexits.h EX_USAGE: the command was used incorrectly.

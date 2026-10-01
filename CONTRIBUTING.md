@@ -32,10 +32,12 @@ Sources/
     CommandLine/            Argument parsing and --help text
     Selection/              Which video device, audio input, and format to use
     Measurement/            Percentiles and the advice --measure prints
-  plugview/               The macOS shell: AVFoundation, Core Audio, AppKit
+  PlugviewCapture/        AVFoundation and Core Audio: capture session, device discovery, format locking,
+                          audio buffers, permissions, --measure
+  PlugviewUI/             The app's launcher UI (empty until v0.2 adds it)
+  plugview/               The executable: AppKit shell that wires the modules together
     main.swift              Parses the command and dispatches it
-    App/                    App delegate (hot-plug, permissions, commands), menu, console output
-    Capture/                Capture session, device discovery, format locking, Core Audio buffers, --measure
+    App/                    App delegate (hot-plug, permissions, commands) and menu
     Window/                 The player window and key handling
     Resources/Info.plist    Embedded in the binary; holds the camera/microphone prompt texts
 Tests/PlugviewCoreTests/  Swift Testing suites for PlugviewCore
@@ -43,7 +45,7 @@ docs/                     Performance notes and measurements
 ```
 
 **Rule of thumb:** a decision that can be tested without a capture card belongs in `PlugviewCore`. The
-`plugview` target turns framework objects into `PlugviewCore` values, asks it what to do, and does it.
+`PlugviewCapture` and `plugview` targets turn framework objects into `PlugviewCore` values, ask it what to do, and do it.
 
 ## Code rules
 
