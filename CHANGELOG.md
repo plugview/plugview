@@ -14,6 +14,8 @@ All notable changes to plugview are listed here. The format follows
 
 ### Fixed
 
+- After unplugging and replugging the capture card, sound now comes back: the card's audio input appears a
+  moment after its video, and plugview adds it as soon as it does.
 - The window's status messages ("Waiting for a capture device…") were invisible in light mode.
 - When a capture device fails to start, the window now says why instead of pointing to the terminal.
 
