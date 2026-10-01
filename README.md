@@ -5,10 +5,10 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/web-plugview.app-FFB000)](https://plugview.app)
 
-Plug in a capture card, type `plugview`, play.
+Plug in a capture card, open plugview (or type `plugview`), play.
 
-A tiny, open-source macOS command that shows your HDMI capture device (Nintendo Switch, PlayStation, Xbox,
-camera, …) in a resizable window with sound, as fast as the Mac can draw it. No scenes, no sources, no
+A tiny, open-source macOS app and command that shows your HDMI capture device (Nintendo Switch, PlayStation,
+Xbox, camera, …) in a resizable window with sound, as fast as the Mac can draw it. No scenes, no sources, no
 streaming setup.
 
 - **Low latency.** Frames go straight from the capture driver to the GPU compositor. plugview never copies a
@@ -20,19 +20,32 @@ streaming setup.
   recovers after the Mac wakes from sleep.
 - **Stays awake.** The display won't sleep while you play with a controller.
 - **Self-check.** `plugview --measure` reports the real frame rate and latency and tells you what to fix.
-- **Zero dependencies.** One ~250 KB native binary, Apple frameworks only.
+- **Zero dependencies.** One native binary (about 1 MB per architecture), Apple frameworks only.
 
 Requires macOS 14 Sonoma or later, on Apple silicon or Intel.
 
 ## Install
 
-**Homebrew** (recommended):
+**The app, with Homebrew** (recommended). It also puts the `plugview` command on your PATH:
+
+```sh
+brew install --cask plugview/tap/plugview
+```
+
+**Only the command, with Homebrew:**
 
 ```sh
 brew install plugview/tap/plugview
 ```
 
-**Prebuilt binary** from [Releases](https://github.com/plugview/plugview/releases/latest):
+Both install the `plugview` command, so pick one. If both are installed, the command-only package's
+`plugview` is the one on your PATH. To switch, `brew uninstall plugview` first.
+
+**The app, downloaded:** get `plugview-macos-app.zip` from
+[Releases](https://github.com/plugview/plugview/releases/latest), unzip it, and move `plugview.app` to
+Applications.
+
+**Only the command, prebuilt** from [Releases](https://github.com/plugview/plugview/releases/latest):
 
 ```sh
 curl -fsSL https://github.com/plugview/plugview/releases/latest/download/plugview-macos-universal.tar.gz | tar -xz
@@ -47,9 +60,26 @@ Downloading with `curl` avoids the Gatekeeper prompt. If you downloaded the arch
 ```sh
 git clone https://github.com/plugview/plugview.git && cd plugview
 make install            # installs to ~/.local/bin; use `sudo make install PREFIX=/usr/local` for all users
+make app                # builds .build/dist/plugview.app
 ```
 
+### Not notarized yet
+
+plugview is not signed with an Apple Developer ID yet. Until it is:
+
+- The first time you open the app, macOS says it cannot verify it. Open **System Settings › Privacy &
+  Security**, scroll down, and click **Open Anyway**. This is needed once per install or update.
+- Until you do, the `plugview` command that comes with the app is stopped by macOS too (the shell prints
+  `killed` or nothing, exit code 137). Open the app once and approve it; after that the command works.
+- After each update macOS asks for camera and microphone access again, because it cannot tell the new build
+  from a different app.
+
+Signing and notarization are planned before any paid features.
+
 ## Use
+
+Open **plugview** from Applications, Launchpad, or Spotlight. It waits for a capture card, plays the one you
+plug in, and lets you pick when several are connected. From a terminal:
 
 ```sh
 plugview                 # first USB capture device, with its audio
@@ -77,9 +107,10 @@ and remembers its size and position.
 
 ## First run: permissions
 
-macOS asks once for **Camera** (video) and **Microphone** (the card's audio) access. Because plugview runs
-from a terminal, the permission is granted to your terminal app (Terminal, iTerm, Warp, …). If you said no,
-re-enable it in **System Settings › Privacy & Security › Camera / Microphone**.
+macOS asks once for **Camera** (video) and **Microphone** (the card's audio) access. To macOS a capture card
+is a camera. Opened as an app, plugview explains this first and asks for itself. Typed in a terminal, the
+permission belongs to your terminal app (Terminal, iTerm, Warp, …). If you said no, re-enable it in
+**System Settings › Privacy & Security › Camera / Microphone**.
 
 ## Lowest latency checklist
 

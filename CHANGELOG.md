@@ -6,8 +6,15 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-01
+
+plugview is now also a Mac app. Typed in a terminal, the command behaves exactly as in 0.1.0.
+
 ### Added
 
+- `plugview.app`, installed with `brew install --cask plugview/tap/plugview` or downloaded as
+  `plugview-macos-app.zip`. It has its own icon and links the `plugview` command into Homebrew's `bin`, so the
+  terminal command keeps working. The command-only formula stays available.
 - Opened from Finder or the Dock instead of a terminal, plugview shows a launcher window: it explains the camera
   and microphone permissions before macOS asks, and if camera access is refused it says how to turn it back on,
   with a button that opens the right System Settings page. Typed in a terminal, plugview behaves as before.
@@ -17,12 +24,23 @@ All notable changes to plugview are listed here. The format follows
   full screen, capture device), which fade out when the mouse rests. The video can be dragged to move the window.
 - Opened as an app with several capture devices connected, plugview lets you pick one and remembers it.
 
+### Changed
+
+- The bundle identifier is now `app.plugview.plugview` (was `io.github.mauricioleon54.plugview`). The saved
+  window size and position and the chosen capture device carry over once.
+
 ### Fixed
 
 - After unplugging and replugging the capture card, sound now comes back: the card's audio input appears a
   moment after its video, and plugview adds it as soon as it does.
 - The window's status messages ("Waiting for a capture device…") were invisible in light mode.
 - When a capture device fails to start, the window now says why instead of pointing to the terminal.
+
+### Known limitations
+
+- The app is not notarized yet: the first time it opens, macOS blocks it until you click **Open Anyway** in
+  System Settings › Privacy & Security, and each update asks for camera and microphone access again. Until
+  the app is approved, macOS also stops the `plugview` command installed with it.
 
 ## [0.1.0] - 2026-10-01
 
@@ -51,5 +69,6 @@ First public release.
 - Capture runs at the highest scheduling priority and is marked latency-critical, which keeps App Nap
   and timer coalescing away from it.
 
-[Unreleased]: https://github.com/plugview/plugview/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/plugview/plugview/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/plugview/plugview/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/plugview/plugview/releases/tag/v0.1.0
