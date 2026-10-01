@@ -6,6 +6,7 @@ ARCHIVE := $(DIST_DIR)/plugview-macos-universal.tar.gz
 STRICT := -Xswiftc -warnings-as-errors
 UNIVERSAL := swift build -c release --arch arm64 --arch x86_64
 APP := $(DIST_DIR)/plugview.app
+APP_ARCHIVE := $(DIST_DIR)/plugview-macos-app.zip
 ICON := Sources/plugview/Resources/AppIcon.icns
 DESIGN_DIR ?= ../plugview-design
 
@@ -35,14 +36,16 @@ install: build
 uninstall:
 	rm -f $(PREFIX)/bin/plugview
 
-# Universal (Apple silicon + Intel) release archive with its SHA-256 checksum.
-dist:
-	swift build -c release --arch arm64 --arch x86_64 $(STRICT)
-	rm -rf $(DIST_DIR) && mkdir -p $(DIST_DIR)/plugview-$(VERSION)
-	cp "$$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/plugview" LICENSE README.md CHANGELOG.md $(DIST_DIR)/plugview-$(VERSION)/
+# Release archives, both universal (Apple silicon + Intel), each with its SHA-256 checksum: the bare command
+# (Homebrew formula, curl install) and plugview.app (Homebrew cask, browser download).
+dist: app
+	rm -rf $(DIST_DIR)/plugview-$(VERSION) $(ARCHIVE)* $(APP_ARCHIVE)* && mkdir -p $(DIST_DIR)/plugview-$(VERSION)
+	cp "$$($(UNIVERSAL) --show-bin-path)/plugview" LICENSE README.md CHANGELOG.md $(DIST_DIR)/plugview-$(VERSION)/
 	tar -czf $(ARCHIVE) -C $(DIST_DIR) plugview-$(VERSION)
+	ditto -c -k --keepParent $(APP) $(APP_ARCHIVE)
 	cd $(DIST_DIR) && shasum -a 256 $(notdir $(ARCHIVE)) > $(notdir $(ARCHIVE)).sha256
-	@cat $(ARCHIVE).sha256
+	cd $(DIST_DIR) && shasum -a 256 $(notdir $(APP_ARCHIVE)) > $(notdir $(APP_ARCHIVE)).sha256
+	@cat $(ARCHIVE).sha256 $(APP_ARCHIVE).sha256
 
 # plugview.app: the same universal binary, which still works from the terminal as Contents/MacOS/plugview.
 app:

@@ -29,7 +29,7 @@ jobs:
       - name: Lint, strict build, tests
         run: make check
 
-      - name: Build universal archive
+      - name: Build universal archives
         run: make dist
 
       - name: Verify archive
@@ -39,6 +39,19 @@ jobs:
           archs="$(lipo -archs "$binary")"
           case "$archs" in *arm64*x86_64*|*x86_64*arm64*) ;; *) echo "::error::not universal: $archs"; exit 1 ;; esac
           test "$("$binary" --version)" = "$VERSION"
+
+      - name: Verify app archive
+        run: |
+          ditto -x -k .build/dist/plugview-macos-app.zip "$RUNNER_TEMP/app"
+          app="$RUNNER_TEMP/app/plugview.app"
+          codesign --verify --deep --strict "$app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Contents/Info.plist")" = app.plugview.plugview
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$VERSION"
+          test -f "$app/Contents/Resources/AppIcon.icns"
+          test -d "$app/Contents/Resources/plugview_PlugviewUI.bundle"
+          archs="$(lipo -archs "$app/Contents/MacOS/plugview")"
+          case "$archs" in *arm64*x86_64*|*x86_64*arm64*) ;; *) echo "::error::app not universal: $archs"; exit 1 ;; esac
+          test "$("$app/Contents/MacOS/plugview" --version)" = "$VERSION"
 
       - name: Release notes from CHANGELOG
         run: |
@@ -51,11 +64,24 @@ jobs:
 
           ## Install
 
+          The app (also puts the \`plugview\` command on your PATH):
+
+          \`\`\`sh
+          brew install --cask plugview/tap/plugview
+          \`\`\`
+
+          Only the command:
+
           \`\`\`sh
           brew install plugview/tap/plugview
           \`\`\`
 
-          Or download \`plugview-macos-universal.tar.gz\` below (Apple silicon and Intel, macOS 14+).
+          Or download \`plugview-macos-app.zip\` (the app) or \`plugview-macos-universal.tar.gz\` (the command)
+          below. Both are universal (Apple silicon and Intel) and need macOS 14 or later.
+
+          plugview is not notarized yet, so macOS blocks the app the first time it opens: open
+          **System Settings › Privacy & Security** and click **Open Anyway**. Until then macOS also stops the
+          \`plugview\` command the cask installs. Each update asks for camera and microphone access again.
           NOTES
 
       - name: Publish GitHub release
@@ -65,6 +91,8 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             .build/dist/plugview-macos-universal.tar.gz \
             .build/dist/plugview-macos-universal.tar.gz.sha256 \
+            .build/dist/plugview-macos-app.zip \
+            .build/dist/plugview-macos-app.zip.sha256 \
             --title "plugview $VERSION" \
             --notes-file "$RUNNER_TEMP/notes.md" \
             --verify-tag

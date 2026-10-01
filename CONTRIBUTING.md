@@ -80,7 +80,7 @@ docs/                     Performance notes and measurements
    ```
 
 The [release workflow](.github/workflows/release.yml) checks that the tag matches the version, runs
-`make check`, builds the universal archive, and publishes a GitHub Release whose notes come from that
-version's `CHANGELOG.md` section. The [Homebrew tap](https://github.com/plugview/homebrew-tap)
-picks up the new release automatically within a few hours, or right away if you run its
-*Update formula* workflow.
+`make check`, builds the universal archives (the command and `plugview.app`), and publishes a GitHub Release
+whose notes come from that version's `CHANGELOG.md` section. The
+[Homebrew tap](https://github.com/plugview/homebrew-tap) updates its formula and cask automatically within a
+few hours, or right away if you run its *Update formula* workflow.
