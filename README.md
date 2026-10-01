@@ -109,4 +109,5 @@ change must pass, and how releases are made. Changes are listed in [CHANGELOG.md
 
 ## License
 
-[MIT](LICENSE) © Mauricio León
+[MIT](LICENSE) © Mauricio León. The bundled Geist and Geist Mono fonts are under the
+[SIL Open Font License 1.1](Sources/PlugviewUI/Fonts/OFL.txt).

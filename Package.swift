@@ -16,7 +16,7 @@ let package = Package(
     targets: [
         .target(name: "PlugviewCore", swiftSettings: strictSettings),
         .target(name: "PlugviewCapture", dependencies: ["PlugviewCore"], swiftSettings: strictSettings),
-        .target(name: "PlugviewUI", dependencies: ["PlugviewCore"], swiftSettings: strictSettings),
+        .target(name: "PlugviewUI", dependencies: ["PlugviewCore"], resources: [.copy("Fonts")], swiftSettings: strictSettings),
         .executableTarget(
             name: "plugview",
             dependencies: ["PlugviewCore", "PlugviewCapture", "PlugviewUI"],
@@ -27,5 +27,6 @@ let package = Package(
             ]
         ),
         .testTarget(name: "PlugviewCoreTests", dependencies: ["PlugviewCore"], swiftSettings: strictSettings),
+        .testTarget(name: "PlugviewUITests", dependencies: ["PlugviewUI"], swiftSettings: strictSettings),
     ]
 )
