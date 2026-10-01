@@ -1,7 +1,8 @@
 // swift-tools-version: 6.0
 import PackageDescription
 
-// Embeds the usage strings macOS shows in the camera/microphone permission prompts.
+// Embeds the usage strings macOS shows in the camera/microphone permission prompts; `make app` also copies it into
+// plugview.app, so a terminal run and the app share one bundle id and one set of saved settings.
 let infoPlistPath = "\(Context.packageDirectory)/Sources/plugview/Resources/Info.plist"
 
 // Swift 6 language mode (complete concurrency checking) plus explicit `any` for existential types.
@@ -20,7 +21,7 @@ let package = Package(
         .executableTarget(
             name: "plugview",
             dependencies: ["PlugviewCore", "PlugviewCapture", "PlugviewUI"],
-            exclude: ["Resources/Info.plist"],
+            exclude: ["Resources"],
             swiftSettings: strictSettings,
             linkerSettings: [
                 .unsafeFlags(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist", "-Xlinker", infoPlistPath])
