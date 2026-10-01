@@ -29,13 +29,18 @@ public struct DeviceInfo: Equatable, Sendable {
     }
 }
 
-/// Picks the video device to show.
+/// The video devices plugview may show, best first.
 ///
 /// Without a query only wired hardware qualifies,
 /// USB first: virtual cameras (streaming tools) and a nearby iPhone are never auto-picked.
+public func playableVideoDevices(from candidates: [DeviceInfo], matching query: String?) -> [DeviceInfo] {
+    if let query { return candidates.filter { $0.matches(query) } }
+    return candidates.filter { $0.transport == .usb } + candidates.filter { $0.transport == .other }
+}
+
+/// Picks the video device to show: the best of `playableVideoDevices`.
 public func selectVideoDevice(from candidates: [DeviceInfo], matching query: String?) -> DeviceInfo? {
-    if let query { return candidates.first { $0.matches(query) } }
-    return candidates.first { $0.transport == .usb } ?? candidates.first { $0.transport == .other }
+    playableVideoDevices(from: candidates, matching: query).first
 }
 
 /// Picks the audio input that belongs to the chosen video device.

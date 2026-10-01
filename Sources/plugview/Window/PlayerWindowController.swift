@@ -80,6 +80,8 @@ private final class PlayerView: NSView {
         super.init(frame: .zero)
         wantsLayer = true
 
+        // The video background is always black, so the label keeps dark-mode colors even in light mode.
+        statusLabel.appearance = NSAppearance(named: .darkAqua)
         statusLabel.textColor = .secondaryLabelColor
         statusLabel.font = .systemFont(ofSize: 18, weight: .medium)
         statusLabel.alignment = .center

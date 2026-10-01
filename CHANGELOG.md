@@ -6,6 +6,11 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- The window's status messages ("Waiting for a capture device…") were invisible in light mode.
+- When a capture device fails to start, the window now says why instead of pointing to the terminal.
+
 ## [0.1.0] - 2026-10-01
 
 First public release.

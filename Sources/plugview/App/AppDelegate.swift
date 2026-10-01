@@ -4,9 +4,14 @@ import PlugviewCapture
 import PlugviewCore
 
 /// Wires permissions, device hot-plug, the capture session, and the window together.
+///
+/// Every change goes through `send(_:)`, which moves `state` and updates the window. Terminal launches
+/// also print status lines and exit when camera access is denied, exactly as v0.1.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let options: RunOptions
+    private let launchMode: LaunchMode
+    private var state: LauncherState = .permissionNeeded(.camera)
     private let capture = CaptureSession()
     private lazy var windowController = PlayerWindowController(session: capture.session) { [weak self] command in
         self?.perform(command)
@@ -21,15 +26,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var notificationObservers: [any NSObjectProtocol] = []
     private var displaySleepActivity: (any NSObjectProtocol)?
 
-    init(options: RunOptions) {
+    init(options: RunOptions, launchMode: LaunchMode) {
         self.options = options
+        self.launchMode = launchMode
         volumePercent = options.volumePercent
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = makeMainMenu()
         windowController.showWindow(nil)
-        windowController.showStatus("Waiting for camera permission…\nAllow it in the macOS prompt if one appears.")
+        send(.permissionRequested(.camera))
         NSApp.activate()
         // Toggling during launch is ignored; wait until the window is on screen and the app is active.
         if options.startsInFullScreen {
@@ -45,7 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         observeDeviceChanges()
 
         Task {
-            await requestPermissions()
+            guard await requestPermissions() else { return }
             await attachIfPossible()
         }
     }
@@ -59,26 +65,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Permissions
 
-    private func requestPermissions() async {
+    /// Returns whether plugview can play; without camera access a terminal launch exits, as in v0.1.
+    private func requestPermissions() async -> Bool {
         guard await Permissions.isGranted(for: .video) else {
-            printError(Permissions.cameraDeniedMessage)
-            exit(EXIT_FAILURE)
+            switch launchMode {
+            case .terminal:
+                printError(Permissions.cameraDeniedMessage)
+                exit(EXIT_FAILURE)
+            case .app:
+                send(.permissionDenied(.camera))
+                return false
+            }
         }
-        guard options.isAudioEnabled else { return }
-
-        isAudioPermitted = await Permissions.isGranted(for: .audio)
-        if !isAudioPermitted { printError(Permissions.microphoneDeniedMessage) }
+        if options.isAudioEnabled {
+            isAudioPermitted = await Permissions.isGranted(for: .audio)
+            if !isAudioPermitted { printError(Permissions.microphoneDeniedMessage) }
+        }
+        send(.permissionsGranted)
+        return true
     }
 
     // MARK: - Attaching devices
 
+    /// Reports the connected devices and, when nothing is playing, starts the best one.
     private func attachIfPossible() async {
+        send(.devicesChanged(playableVideoDevices(from: DeviceCatalog.videoDevices(), matching: options.videoQuery)))
         guard attachedDeviceIDs.isEmpty, !isAttaching else { return }
 
-        guard let video = selectVideoDevice(from: DeviceCatalog.videoDevices(), matching: options.videoQuery) else {
+        switch state {
+        case .ready(let devices):
+            guard let video = devices.first else { return }
+            await attach(video)
+        case .waitingForSignal:
             reportWaiting()
+        case .permissionNeeded, .permissionDenied, .playing, .failed:
             return
         }
+    }
+
+    private func attach(_ video: DeviceInfo) async {
         let audio = selectAudio(for: video)
 
         isAttaching = true
@@ -87,10 +112,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let activeCapture = try await capture.start(videoID: video.uniqueID, audioID: audio?.uniqueID, volume: effectiveVolume)
             attachedDeviceIDs = Set([video.uniqueID, audio?.uniqueID].compactMap { $0 })
             hasReportedWaiting = false
+            send(.playbackStarted(video))
             showAttached(activeCapture)
         } catch {
             printError("\(error)")
-            windowController.showStatus("Could not start \(video.name).\nSee the terminal for details.")
+            send(.playbackFailed(CaptureFailure(deviceName: video.name, reason: "\(error)")))
         }
     }
 
@@ -109,15 +135,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         attachedDeviceIDs = []
         capture.stop()
         print(reason)
-        windowController.showStatus(reason)
+        send(.playbackStopped)
     }
 
+    private var waitingTarget: String { options.videoQuery.map { "'\($0)'" } ?? "a capture device" }
+
     private func reportWaiting() {
-        let target = options.videoQuery.map { "'\($0)'" } ?? "a capture device"
-        windowController.showStatus("Waiting for \(target)…\nPlug it in and it will appear here.")
         guard !hasReportedWaiting else { return }
         hasReportedWaiting = true
-        print("Waiting for \(target)… (run 'plugview --list' to see detected devices)")
+        print("Waiting for \(waitingTarget)… (run 'plugview --list' to see detected devices)")
     }
 
     private func showAttached(_ activeCapture: ActiveCapture) {
@@ -126,6 +152,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         print("Showing \(activeCapture.videoName) · \(mode.summary), \(audioSummary)")
         windowController.showLiveVideo(
             deviceName: activeCapture.videoName, details: "\(mode.summary) · \(audioSummary)", width: mode.width, height: mode.height)
+    }
+
+    // MARK: - State
+
+    private func send(_ event: LauncherEvent) {
+        state = nextLauncherState(after: state, on: event)
+        if let message = statusMessage(for: state) { windowController.showStatus(message) }
+    }
+
+    /// The plain-text window for each state (styled in Phase 1.4); `nil` while video is on screen.
+    private func statusMessage(for state: LauncherState) -> String? {
+        switch state {
+        case .permissionNeeded(.camera):
+            "Waiting for camera permission…\nAllow it in the macOS prompt if one appears."
+        case .permissionNeeded(.microphone):
+            "Waiting for microphone permission…\nAllow it in the macOS prompt if one appears."
+        case .permissionDenied(.camera):
+            "Camera access is denied, so the capture card cannot be shown.\nAllow plugview in System Settings › Privacy & Security › Camera."
+        case .permissionDenied(.microphone):
+            "Microphone access is denied, so the console cannot be heard.\nAllow plugview in System Settings › Privacy & Security › Microphone."
+        case .waitingForSignal:
+            "Waiting for \(waitingTarget)…\nPlug it in and it will appear here."
+        case .ready(let devices):
+            "Starting \(devices.first?.name ?? "the capture device")…"
+        case .playing:
+            nil
+        case .failed(let failure):
+            "Could not start \(failure.deviceName).\n\(failure.reason)"
+        }
     }
 
     private func observeDeviceChanges() {
@@ -140,8 +195,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             center.addObserver(forName: AVCaptureDevice.wasDisconnectedNotification, object: nil, queue: .main) { [weak self] notification in
                 let deviceID = (notification.object as? AVCaptureDevice)?.uniqueID
                 MainActor.assumeIsolated {
-                    guard let self, let deviceID, self.attachedDeviceIDs.contains(deviceID) else { return }
-                    self.detach(reason: "Capture device disconnected. Waiting for it to come back…")
+                    guard let self else { return }
+                    if let deviceID, self.attachedDeviceIDs.contains(deviceID) {
+                        self.detach(reason: "Capture device disconnected. Waiting for it to come back…")
+                    }
+                    // Also refreshes the launcher when a device that was not playing goes away.
                     Task { await self.attachIfPossible() }
                 }
             },
