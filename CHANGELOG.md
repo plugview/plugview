@@ -6,6 +6,12 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Opened from Finder or the Dock instead of a terminal, plugview shows a launcher window: it explains the camera
+  and microphone permissions before macOS asks, and if camera access is refused it says how to turn it back on,
+  with a button that opens the right System Settings page. Typed in a terminal, plugview behaves as before.
+
 ### Fixed
 
 - The window's status messages ("Waiting for a capture device…") were invisible in light mode.

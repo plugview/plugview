@@ -4,6 +4,11 @@ import AVFoundation
 ///
 /// From a terminal, macOS grants it to the terminal app.
 public enum Permissions {
+    /// Whether macOS has not asked the user yet, so asking now shows a prompt.
+    public static func isUndetermined(for mediaType: AVMediaType) -> Bool {
+        AVCaptureDevice.authorizationStatus(for: mediaType) == .notDetermined
+    }
+
     public static func isGranted(for mediaType: AVMediaType) async -> Bool {
         switch AVCaptureDevice.authorizationStatus(for: mediaType) {
         case .authorized: true
