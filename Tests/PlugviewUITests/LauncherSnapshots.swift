@@ -25,7 +25,15 @@ import Testing
             (
                 "5-ready", .ready([card]),
                 {
-                    $0.readyDetails = "1920×1080 · 60 fps · audio on"; $0.playNow = {}
+                    $0.readyDetails = ["card": "1920×1080 · 60 fps · audio on"]
+                    $0.play = { _ in }
+                }
+            ),
+            (
+                "5b-pick", .ready([card, DeviceInfo(uniqueID: "camlink", name: "Cam Link 4K", modelID: "", transport: .usb)]),
+                {
+                    $0.readyDetails = ["card": "1920×1080 · 60 fps · audio on", "camlink": "3840×2160 · 30 fps · no audio"]
+                    $0.play = { _ in }
                 }
             ),
             ("6-failed", .failed(CaptureFailure(deviceName: "UGREEN 25773", reason: "cannot be added (is another app using it?)")), { _ in }),

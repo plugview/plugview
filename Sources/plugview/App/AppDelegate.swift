@@ -13,9 +13,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let options: RunOptions
     private let launchMode: LaunchMode
     private let launcher = LauncherModel()
+    private let controls = ControlsModel()
     private let capture = CaptureSession()
-    private lazy var windowController = PlayerWindowController(session: capture.session, launcher: launcher) { [weak self] command in
-        self?.perform(command)
+    private lazy var windowController = PlayerWindowController(session: capture.session, launcher: launcher, controls: controls) {
+        [weak self] command in self?.perform(command)
     }
 
     private var attachedDeviceIDs: Set<String> = []
@@ -33,6 +34,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.launchMode = launchMode
         launcher.waitingTarget = options.videoQuery.map { "'\($0)'" } ?? "a capture device"
         volumePercent = options.volumePercent
+        super.init()
+        controls.volumePercent = volumePercent
+        controls.setVolume = { [weak self] percent in self?.perform(.setVolume(percent: percent)) }
+        controls.toggleMute = { [weak self] in self?.perform(.toggleMute) }
+        controls.toggleFullScreen = { [weak self] in self?.windowController.window?.toggleFullScreen(nil) }
+        controls.selectDevice = { [weak self] device in self?.switchPlayback(to: device) }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -105,7 +112,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Reports the connected devices and, when nothing is playing, starts the best one.
     private func attachIfPossible() async {
-        send(.devicesChanged(playableVideoDevices(from: DeviceCatalog.videoDevices(), matching: options.videoQuery)))
+        let playable = playableVideoDevices(from: DeviceCatalog.videoDevices(), matching: options.videoQuery)
+        // A terminal launch picks exactly as v0.1; only the app remembers the user's pick.
+        let preferredID = launchMode == .app ? UserDefaults.standard.string(forKey: Self.preferredDeviceKey) : nil
+        let devices = preferredFirst(playable, preferredID: preferredID)
+        controls.devices = devices
+        send(.devicesChanged(devices))
         if case .playing(let video) = launcher.state {
             await attachLateAudio(to: video)
             return
@@ -114,11 +126,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         switch launcher.state {
         case .ready(let devices):
-            guard let video = devices.first else { return }
-            launcher.readyDetails = readyDetails(for: video)
+            launcher.readyDetails = Dictionary(devices.map { ($0.uniqueID, readyDetails(for: $0)) }) { first, _ in first }
             switch launchMode {
-            case .terminal: await attach(video)
-            case .app: scheduleAutoPlay()
+            case .terminal:
+                guard let video = devices.first else { return }
+                await attach(video)
+            case .app:
+                offerReadyDevices(isAutoPlaying: shouldAutoPlay(devices, preferredID: preferredID))
             }
         case .waitingForSignal:
             reportWaiting()
@@ -127,29 +141,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Lets the plug-in intro finish before playing; the launcher's Play button starts sooner.
-    private func scheduleAutoPlay() {
+    /// Lets the user pick a ready device; when auto-playing, the first one starts once the plug-in intro ends.
+    private func offerReadyDevices(isAutoPlaying: Bool) {
+        launcher.play = { [weak self] device in Task { await self?.play(device, isUserChoice: true) } }
+        launcher.isAutoPlayPending = isAutoPlaying
+        guard isAutoPlaying else {
+            // e.g. a second card arrived during the countdown: now the user chooses.
+            autoPlayTask?.cancel()
+            autoPlayTask = nil
+            return
+        }
         guard autoPlayTask == nil else { return }
-        launcher.playNow = { [weak self] in Task { await self?.playReadyDevice() } }
         autoPlayTask = Task { [weak self] in
             do {
                 try await Task.sleep(for: .seconds(Tuning.launcherAutoPlaySeconds))
             } catch {
                 return
             }
-            await self?.playReadyDevice()
+            guard let self, case .ready(let devices) = self.launcher.state, let first = devices.first else { return }
+            await self.play(first, isUserChoice: false)
         }
     }
 
-    private func playReadyDevice() async {
+    private func play(_ video: DeviceInfo, isUserChoice: Bool) async {
         autoPlayTask?.cancel()
         autoPlayTask = nil
-        // Removed only once the video covers the launcher, so the Play button never jumps the layout.
-        defer { launcher.playNow = nil }
+        // Cleared only once the video covers the launcher, so the buttons never jump the layout.
+        defer {
+            launcher.play = nil
+            launcher.isAutoPlayPending = false
+        }
         // The card may have been unplugged during the countdown.
-        guard case .ready(let devices) = launcher.state, let video = devices.first, attachedDeviceIDs.isEmpty, !isAttaching else { return }
+        guard case .ready(let devices) = launcher.state, devices.contains(video), attachedDeviceIDs.isEmpty, !isAttaching else { return }
+        if isUserChoice { UserDefaults.standard.set(video.uniqueID, forKey: Self.preferredDeviceKey) }
         await attach(video)
     }
+
+    /// The device menu over the video: switches to another device and remembers it.
+    private func switchPlayback(to video: DeviceInfo) {
+        guard case .playing(let current) = launcher.state, current != video, !isAttaching else { return }
+        UserDefaults.standard.set(video.uniqueID, forKey: Self.preferredDeviceKey)
+        Task { await attach(video) }
+    }
+
+    private static let preferredDeviceKey = "PreferredVideoDeviceID"
 
     /// "1920×1080 · 60 fps · audio on" for the ready screen, read without starting the device.
     private func readyDetails(for video: DeviceInfo) -> String {
@@ -170,6 +205,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             attachedDeviceIDs = Set([video.uniqueID, audio?.uniqueID].compactMap { $0 })
             hasReportedWaiting = false
             send(.playbackStarted(video))
+            controls.playingDeviceID = video.uniqueID
             showAttached(activeCapture)
         } catch {
             printError("\(error)")
@@ -270,8 +306,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .changeVolume(let deltaPercent):
             volumePercent = min(100, max(0, volumePercent + deltaPercent))
             isMuted = false
+        case .setVolume(let percent):
+            volumePercent = min(100, max(0, percent))
+            isMuted = false
         }
         capture.setVolume(effectiveVolume)
+        controls.volumePercent = volumePercent
+        controls.isMuted = isMuted
+        // The slider sends a value per step of a drag; only keys print, as in v0.1.
+        if case .setVolume = command { return }
         print(isMuted ? "Muted" : "Volume \(volumePercent)%")
     }
 }

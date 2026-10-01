@@ -34,12 +34,27 @@ public struct LauncherView: View {
                 Link(destination: helpURL) { Text("Help me connect") }.buttonStyle(BrandButtonStyle(isPrimary: false))
             }
         case .ready(let devices):
-            Screen(art: .signal, title: "SIGNAL FOUND", message: nil) {
-                DeviceRow(name: devices.first?.name ?? "Capture device", details: model.readyDetails)
-                if let playNow = model.playNow {
-                    Button(action: playNow) { Label("Play", systemImage: "play.fill") }
-                        .buttonStyle(BrandButtonStyle(isPrimary: true))
-                        .keyboardShortcut(.defaultAction)
+            Screen(art: .signal, title: "SIGNAL FOUND", message: readyMessage(for: devices)) {
+                ForEach(devices, id: \.uniqueID) { device in
+                    if let play = model.play, devices.count > 1 {
+                        Button {
+                            play(device)
+                        } label: {
+                            DeviceRow(name: device.name, details: model.readyDetails[device.uniqueID] ?? "", isPickable: true)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        DeviceRow(name: device.name, details: model.readyDetails[device.uniqueID] ?? "")
+                    }
+                }
+                if let play = model.play, let first = devices.first, devices.count == 1 || model.isAutoPlayPending {
+                    Button {
+                        play(first)
+                    } label: {
+                        Label(devices.count == 1 ? "Play" : "Play \(first.name)", systemImage: "play.fill")
+                    }
+                    .buttonStyle(BrandButtonStyle(isPrimary: true))
+                    .keyboardShortcut(.defaultAction)
                 }
             }
         case .playing:
@@ -49,6 +64,11 @@ public struct LauncherView: View {
                 Link(destination: helpURL) { Text("Help me connect") }.buttonStyle(BrandButtonStyle(isPrimary: false))
             }
         }
+    }
+
+    private func readyMessage(for devices: [DeviceInfo]) -> String? {
+        guard devices.count > 1, model.play != nil else { return nil }
+        return model.isAutoPlayPending ? "Playing the one you used last, or pick another." : "Pick one. plugview remembers your choice."
     }
 
     private var waitingMessage: String {
@@ -111,6 +131,7 @@ extension Screen where Actions == EmptyView {
 private struct DeviceRow: View {
     let name: String
     let details: String
+    var isPickable = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -120,6 +141,7 @@ private struct DeviceRow: View {
                 if !details.isEmpty { Text(details).font(BrandFonts.mono(12, .medium)).foregroundStyle(Palette.muted) }
             }
             Spacer(minLength: 0)
+            if isPickable { Image(systemName: "play.fill").font(.system(size: 12)).foregroundStyle(Palette.signal) }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)

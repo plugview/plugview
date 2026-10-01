@@ -70,8 +70,9 @@ plugview -v 50           # start at 50 % volume
 | `⌘M` | Minimize |
 | `Q` / `⌘Q` | Quit |
 
-The window is titled with the device name, and the subtitle shows the running mode
-(e.g. `1920×1080 @ 60 fps · audio from UGREEN 25773`). Resize it by dragging; it keeps the video's aspect ratio
+The video fills the window with no title bar. Move the mouse to show the window buttons and a controls bar
+(mute, volume, full screen, and the capture device when more than one is connected); they fade out when the
+mouse rests. Drag the video to move the window. Resize it by dragging an edge; it keeps the video's aspect ratio
 and remembers its size and position.
 
 ## First run: permissions

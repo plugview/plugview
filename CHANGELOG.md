@@ -13,6 +13,9 @@ All notable changes to plugview are listed here. The format follows
   with a button that opens the right System Settings page. Typed in a terminal, plugview behaves as before.
 - The window now uses the plugview look: dark title bar, Geist fonts, the connector animation while waiting for
   a card, and the plug-in animation when one is found (Play starts it right away). Reduce Motion stops them.
+- No title bar over the video: moving the mouse shows the window buttons and a controls bar (mute, volume,
+  full screen, capture device), which fade out when the mouse rests. The video can be dragged to move the window.
+- Opened as an app with several capture devices connected, plugview lets you pick one and remembers it.
 
 ### Fixed
 
