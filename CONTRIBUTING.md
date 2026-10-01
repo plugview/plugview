@@ -34,7 +34,7 @@ Sources/
     Measurement/            Percentiles and the advice --measure prints
   PlugviewCapture/        AVFoundation and Core Audio: capture session, device discovery, format locking,
                           audio buffers, permissions, --measure
-  PlugviewUI/             The app's launcher UI (empty until v0.2 adds it)
+  PlugviewUI/             SwiftUI launcher shown when plugview is opened as an app: states, onboarding
   plugview/               The executable: AppKit shell that wires the modules together
     main.swift              Parses the command and dispatches it
     App/                    App delegate (hot-plug, permissions, commands) and menu

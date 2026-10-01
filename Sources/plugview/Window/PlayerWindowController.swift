@@ -1,19 +1,21 @@
 import AVFoundation
 import AppKit
 import PlugviewCore
+import PlugviewUI
+import SwiftUI
 
 enum PlayerCommand {
     case toggleMute
     case changeVolume(byPercent: Int)
 }
 
-/// The single resizable window: live preview, a status message while no device is attached, and key shortcuts.
+/// The single resizable window: live preview, the launcher while no video is on screen, and key shortcuts.
 @MainActor
 final class PlayerWindowController: NSWindowController, NSWindowDelegate {
     private let playerView: PlayerView
 
-    init(session: AVCaptureSession, onCommand: @escaping (PlayerCommand) -> Void) {
-        playerView = PlayerView(session: session, onCommand: onCommand)
+    init(session: AVCaptureSession, launcher: LauncherModel, onCommand: @escaping (PlayerCommand) -> Void) {
+        playerView = PlayerView(session: session, launcher: launcher, onCommand: onCommand)
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1280, height: 720),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -40,7 +42,7 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
         window?.subtitle = details
         window?.contentAspectRatio = NSSize(width: width, height: height)
         fitContentHeight(toAspectRatio: Double(width) / Double(height))
-        playerView.setStatus(nil)
+        playerView.isLauncherVisible = false
     }
 
     /// The restored frame may come from a source with another shape; keep its width and fix its height
@@ -56,10 +58,10 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
         window.setFrame(window.frameRect(forContentRect: fittedRect), display: true, animate: false)
     }
 
-    func showStatus(_ message: String) {
+    func showLauncher() {
         window?.title = "plugview"
         window?.subtitle = ""
-        playerView.setStatus(message)
+        playerView.isLauncherVisible = true
     }
 
     func windowDidEnterFullScreen(_ notification: Notification) {
@@ -69,29 +71,20 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
 private final class PlayerView: NSView {
     private let previewLayer: AVCaptureVideoPreviewLayer
-    private let statusLabel = NSTextField(labelWithString: "")
+    private let launcherView: NSHostingView<LauncherView>
     private let onCommand: (PlayerCommand) -> Void
 
-    init(session: AVCaptureSession, onCommand: @escaping (PlayerCommand) -> Void) {
+    init(session: AVCaptureSession, launcher: LauncherModel, onCommand: @escaping (PlayerCommand) -> Void) {
         previewLayer = AVCaptureVideoPreviewLayer(session: session)
         previewLayer.videoGravity = .resizeAspect
         previewLayer.backgroundColor = NSColor.black.cgColor
+        launcherView = NSHostingView(rootView: LauncherView(model: launcher))
         self.onCommand = onCommand
         super.init(frame: .zero)
         wantsLayer = true
 
-        // The video background is always black, so the label keeps dark-mode colors even in light mode.
-        statusLabel.appearance = NSAppearance(named: .darkAqua)
-        statusLabel.textColor = .secondaryLabelColor
-        statusLabel.font = .systemFont(ofSize: 18, weight: .medium)
-        statusLabel.alignment = .center
-        statusLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(statusLabel)
-        NSLayoutConstraint.activate([
-            statusLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
-            statusLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            statusLabel.widthAnchor.constraint(lessThanOrEqualTo: widthAnchor, constant: -48),
-        ])
+        launcherView.autoresizingMask = [.width, .height]
+        addSubview(launcherView)
     }
 
     @available(*, unavailable)
@@ -103,9 +96,15 @@ private final class PlayerView: NSView {
 
     override var acceptsFirstResponder: Bool { true }
 
-    func setStatus(_ message: String?) {
-        statusLabel.stringValue = message ?? ""
-        statusLabel.isHidden = message == nil
+    /// Hidden while video plays, so it never covers the picture or takes clicks.
+    var isLauncherVisible: Bool {
+        get { !launcherView.isHidden }
+        set { launcherView.isHidden = !newValue }
+    }
+
+    override func layout() {
+        super.layout()
+        launcherView.frame = bounds
     }
 
     override func keyDown(with event: NSEvent) {
