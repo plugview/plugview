@@ -92,3 +92,27 @@ import Testing
         #expect(playableVideoDevices(from: [usbCard, iPhone], matching: "iphone") == [iPhone])
     }
 }
+
+@Suite struct DevicePreferenceTests {
+    let usbCard = DeviceInfo(uniqueID: "card", name: "USB3.0 Video", modelID: "", transport: .usb)
+    let camLink = DeviceInfo(uniqueID: "camlink", name: "Cam Link 4K", modelID: "", transport: .usb)
+
+    @Test func movesThePreferredDeviceToTheFront() {
+        #expect(preferredFirst([usbCard, camLink], preferredID: "camlink") == [camLink, usbCard])
+    }
+
+    @Test func keepsTheOrderWithoutAConnectedPreference() {
+        #expect(preferredFirst([usbCard, camLink], preferredID: nil) == [usbCard, camLink])
+        #expect(preferredFirst([usbCard, camLink], preferredID: "unplugged") == [usbCard, camLink])
+    }
+
+    @Test func autoPlaysASingleDeviceOrTheRememberedOne() {
+        #expect(shouldAutoPlay([usbCard], preferredID: nil))
+        #expect(shouldAutoPlay([usbCard, camLink], preferredID: "camlink"))
+    }
+
+    @Test func waitsForAPickAmongSeveralNewDevices() {
+        #expect(!shouldAutoPlay([usbCard, camLink], preferredID: nil))
+        #expect(!shouldAutoPlay([usbCard, camLink], preferredID: "unplugged"))
+    }
+}
