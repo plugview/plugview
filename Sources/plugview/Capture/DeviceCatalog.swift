@@ -32,7 +32,7 @@ enum DeviceCatalog {
         return DeviceInfo(uniqueID: device.uniqueID, name: device.localizedName, modelID: device.modelID, transport: transport)
     }
 
-    /// Maps `transportType`, a Core Audio transport FourCC such as `usb `, to a transport.
+    /// Maps a Core Audio transport FourCC (the `transportType` property) to a transport.
     private static func transport(fromFourCC code: Int32) -> DeviceTransport {
         switch UInt32(bitPattern: code) {
         case kAudioDeviceTransportTypeUSB: .usb
