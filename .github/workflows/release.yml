@@ -52,7 +52,7 @@ jobs:
           ## Install
 
           \`\`\`sh
-          brew install MauricioLeon54/tap/plugview
+          brew install plugview/tap/plugview
           \`\`\`
 
           Or download \`plugview-macos-universal.tar.gz\` below (Apple silicon and Intel, macOS 14+).

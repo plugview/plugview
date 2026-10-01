@@ -1,8 +1,9 @@
 # plugview
 
-[![CI](https://github.com/MauricioLeon54/plugview/actions/workflows/ci.yml/badge.svg)](https://github.com/MauricioLeon54/plugview/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/MauricioLeon54/plugview)](https://github.com/MauricioLeon54/plugview/releases/latest)
+[![CI](https://github.com/plugview/plugview/actions/workflows/ci.yml/badge.svg)](https://github.com/plugview/plugview/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/plugview/plugview)](https://github.com/plugview/plugview/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Website](https://img.shields.io/badge/web-plugview.app-FFB000)](https://plugview.app)
 
 Plug in a capture card, type `plugview`, play.
 
@@ -28,13 +29,13 @@ Requires macOS 14 Sonoma or later, on Apple silicon or Intel.
 **Homebrew** (recommended):
 
 ```sh
-brew install MauricioLeon54/tap/plugview
+brew install plugview/tap/plugview
 ```
 
-**Prebuilt binary** from [Releases](https://github.com/MauricioLeon54/plugview/releases/latest):
+**Prebuilt binary** from [Releases](https://github.com/plugview/plugview/releases/latest):
 
 ```sh
-curl -fsSL https://github.com/MauricioLeon54/plugview/releases/latest/download/plugview-macos-universal.tar.gz | tar -xz
+curl -fsSL https://github.com/plugview/plugview/releases/latest/download/plugview-macos-universal.tar.gz | tar -xz
 sudo install plugview-*/plugview /usr/local/bin/
 ```
 
@@ -44,7 +45,7 @@ Downloading with `curl` avoids the Gatekeeper prompt. If you downloaded the arch
 **From source** (needs Xcode 16.4 or later, or its Command Line Tools):
 
 ```sh
-git clone https://github.com/MauricioLeon54/plugview.git && cd plugview
+git clone https://github.com/plugview/plugview.git && cd plugview
 make install            # installs to ~/.local/bin; use `sudo make install PREFIX=/usr/local` for all users
 ```
 
@@ -98,7 +99,7 @@ re-enable it in **System Settings › Privacy & Security › Camera / Microphone
   match your card (try *Limited* first, then *Full*).
 - **"cannot be added to the capture session":** another app (OBS, Zoom, …) is using the card. Close it.
 
-Found a bug? [Open an issue](https://github.com/MauricioLeon54/plugview/issues/new/choose) and include the output
+Found a bug? [Open an issue](https://github.com/plugview/plugview/issues/new/choose) and include the output
 of `plugview --list` and `plugview --measure`.
 
 ## Contributing

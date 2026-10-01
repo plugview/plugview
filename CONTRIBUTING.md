@@ -8,7 +8,7 @@ Apple frameworks only, no third-party dependencies. Changes that keep it that wa
 You need macOS 14 or later and Xcode 16.4 or later (or its Command Line Tools). CI tests the oldest and newest toolchains.
 
 ```sh
-git clone https://github.com/MauricioLeon54/plugview.git && cd plugview
+git clone https://github.com/plugview/plugview.git && cd plugview
 make check      # what CI runs: strict lint, warnings-as-errors build, tests
 swift run plugview --list
 ```
@@ -77,6 +77,6 @@ docs/                     Performance notes and measurements
 
 The [release workflow](.github/workflows/release.yml) checks that the tag matches the version, runs
 `make check`, builds the universal archive, and publishes a GitHub Release whose notes come from that
-version's `CHANGELOG.md` section. The [Homebrew tap](https://github.com/MauricioLeon54/homebrew-tap)
+version's `CHANGELOG.md` section. The [Homebrew tap](https://github.com/plugview/homebrew-tap)
 picks up the new release automatically within a few hours, or right away if you run its
 *Update formula* workflow.

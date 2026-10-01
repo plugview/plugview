@@ -33,5 +33,5 @@ First public release.
 - Capture runs at the highest scheduling priority and is marked latency-critical, which keeps App Nap
   and timer coalescing away from it.
 
-[Unreleased]: https://github.com/MauricioLeon54/plugview/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/MauricioLeon54/plugview/releases/tag/v0.1.0
+[Unreleased]: https://github.com/plugview/plugview/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/plugview/plugview/releases/tag/v0.1.0
