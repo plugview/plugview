@@ -11,6 +11,8 @@ All notable changes to plugview are listed here. The format follows
 - Opened from Finder or the Dock instead of a terminal, plugview shows a launcher window: it explains the camera
   and microphone permissions before macOS asks, and if camera access is refused it says how to turn it back on,
   with a button that opens the right System Settings page. Typed in a terminal, plugview behaves as before.
+- The window now uses the plugview look: dark title bar, Geist fonts, the connector animation while waiting for
+  a card, and the plug-in animation when one is found (Play starts it right away). Reduce Motion stops them.
 
 ### Fixed
 

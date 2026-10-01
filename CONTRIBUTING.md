@@ -35,6 +35,8 @@ Sources/
   PlugviewCapture/        AVFoundation and Core Audio: capture session, device discovery, format locking,
                           audio buffers, permissions, --measure
   PlugviewUI/             SwiftUI launcher shown when plugview is opened as an app: states, onboarding
+    Brand/                  Palette, fonts, and the mark and its animations drawn from the 64-unit brand geometry
+    Fonts/                  Geist and Geist Mono (SIL OFL); a binary installed without them uses system fonts
   plugview/               The executable: AppKit shell that wires the modules together
     main.swift              Parses the command and dispatches it
     App/                    App delegate (hot-plug, permissions, commands) and menu

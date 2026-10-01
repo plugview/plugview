@@ -23,6 +23,10 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
             defer: false
         )
         window.title = "plugview"
+        // Dark in light mode too: a light title bar over the CRT surface and black video looks cheap.
+        window.appearance = NSAppearance(named: .darkAqua)
+        window.titlebarAppearsTransparent = true
+        window.backgroundColor = NSColor(srgbRed: 0x0C / 255, green: 0x0C / 255, blue: 0x0E / 255, alpha: 1)
         window.contentView = playerView
         window.collectionBehavior.insert(.fullScreenPrimary)
         window.center()

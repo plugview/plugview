@@ -26,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hasReportedWaiting = false
     private var notificationObservers: [any NSObjectProtocol] = []
     private var displaySleepActivity: (any NSObjectProtocol)?
+    private var autoPlayTask: Task<Void, Never>?
 
     init(options: RunOptions, launchMode: LaunchMode) {
         self.options = options
@@ -36,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = makeMainMenu()
+        BrandFonts.register()
         windowController.showWindow(nil)
         windowController.showLauncher()
         NSApp.activate()
@@ -113,12 +115,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch launcher.state {
         case .ready(let devices):
             guard let video = devices.first else { return }
-            await attach(video)
+            launcher.readyDetails = readyDetails(for: video)
+            switch launchMode {
+            case .terminal: await attach(video)
+            case .app: scheduleAutoPlay()
+            }
         case .waitingForSignal:
             reportWaiting()
         case .permissionNeeded, .permissionDenied, .playing, .failed:
             return
         }
+    }
+
+    /// Lets the plug-in intro finish before playing; the launcher's Play button starts sooner.
+    private func scheduleAutoPlay() {
+        guard autoPlayTask == nil else { return }
+        launcher.playNow = { [weak self] in Task { await self?.playReadyDevice() } }
+        autoPlayTask = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .seconds(Tuning.launcherAutoPlaySeconds))
+            } catch {
+                return
+            }
+            await self?.playReadyDevice()
+        }
+    }
+
+    private func playReadyDevice() async {
+        autoPlayTask?.cancel()
+        autoPlayTask = nil
+        // Removed only once the video covers the launcher, so the Play button never jumps the layout.
+        defer { launcher.playNow = nil }
+        // The card may have been unplugged during the countdown.
+        guard case .ready(let devices) = launcher.state, let video = devices.first, attachedDeviceIDs.isEmpty, !isAttaching else { return }
+        await attach(video)
+    }
+
+    /// "1920×1080 · 60 fps · audio on" for the ready screen, read without starting the device.
+    private func readyDetails(for video: DeviceInfo) -> String {
+        let hasAudio =
+            options.isAudioEnabled && isAudioPermitted
+            && selectAudioDevice(from: DeviceCatalog.audioDevices(), for: video, matching: options.audioQuery) != nil
+        let mode = DeviceCatalog.bestMode(ofVideoDevice: video.uniqueID).map { "\($0.width)×\($0.height) · \(Int($0.maxFrameRate.rounded())) fps · " }
+        return (mode ?? "") + (hasAudio ? "audio on" : "no audio")
     }
 
     private func attach(_ video: DeviceInfo) async {
