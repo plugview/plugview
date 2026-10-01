@@ -43,6 +43,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Before the window exists, so it opens with the frame saved under the old bundle id.
+        let defaults = UserDefaults.standard
+        LegacyDefaults.migrate(from: defaults.persistentDomain(forName: LegacyDefaults.domainName), into: defaults)
         NSApp.mainMenu = makeMainMenu()
         BrandFonts.register()
         windowController.showWindow(nil)

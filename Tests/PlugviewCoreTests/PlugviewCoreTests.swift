@@ -187,5 +187,6 @@ import Testing
             .appending(path: "Sources/plugview/Resources/Info.plist")
         let plist = try #require(NSDictionary(contentsOf: plistURL))
         #expect(plist["CFBundleShortVersionString"] as? String == plugviewVersion)
+        #expect(plist["CFBundleVersion"] as? String == plugviewVersion)
     }
 }
