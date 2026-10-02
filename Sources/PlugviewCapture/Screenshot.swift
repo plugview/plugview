@@ -54,5 +54,6 @@ enum Screenshot {
         ]
     }
 
-    private static let context = CIContext()
+    // CIContext is documented as thread-safe; older SDKs do not mark it Sendable.
+    nonisolated(unsafe) private static let context = CIContext()
 }
