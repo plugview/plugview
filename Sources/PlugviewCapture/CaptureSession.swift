@@ -41,10 +41,11 @@ public final class CaptureSession: @unchecked Sendable {
 
     public init() {}
 
-    public func start(videoID: String, audioID: String?, volume: Float) async throws -> ActiveCapture {
+    /// Starts the video device in `mode` (the best mode when `nil` or no longer offered) with its audio input.
+    public func start(videoID: String, mode: ModeChoice? = nil, audioID: String?, volume: Float) async throws -> ActiveCapture {
         try await withCheckedThrowingContinuation { continuation in
             queue.async {
-                continuation.resume(with: Result { try self.startOnQueue(videoID: videoID, audioID: audioID, volume: volume) })
+                continuation.resume(with: Result { try self.startOnQueue(videoID: videoID, mode: mode, audioID: audioID, volume: volume) })
             }
         }
     }
@@ -60,10 +61,10 @@ public final class CaptureSession: @unchecked Sendable {
         queue.async { self.audioOutput.volume = volume }
     }
 
-    private func startOnQueue(videoID: String, audioID: String?, volume: Float) throws -> ActiveCapture {
+    private func startOnQueue(videoID: String, mode: ModeChoice?, audioID: String?, volume: Float) throws -> ActiveCapture {
         guard let videoDevice = AVCaptureDevice(uniqueID: videoID) else { throw CaptureError.deviceUnavailable(id: videoID) }
-        let (requested, audioName) = try configure(video: videoDevice, audioID: audioID, volume: volume)
-        // The device is still locked from lockBestFormat(), which keeps the chosen frame rate through startRunning().
+        let (requested, audioName) = try configure(video: videoDevice, mode: mode, audioID: audioID, volume: volume)
+        // The device is still locked from lockFormat(), which keeps the chosen frame rate through startRunning().
         session.startRunning()
         defer { videoDevice.unlockForConfiguration() }
 
@@ -71,14 +72,16 @@ public final class CaptureSession: @unchecked Sendable {
         return ActiveCapture(videoName: videoDevice.localizedName, audioName: audioName, mode: running)
     }
 
-    /// Adds the inputs and outputs; on success the video device is left locked (see `lockBestFormat`).
-    private func configure(video videoDevice: AVCaptureDevice, audioID: String?, volume: Float) throws -> (VideoMode, audioName: String?) {
+    /// Adds the inputs and outputs; on success the video device is left locked (see `lockFormat`).
+    private func configure(video videoDevice: AVCaptureDevice, mode choice: ModeChoice?, audioID: String?, volume: Float) throws -> (
+        VideoMode, audioName: String?
+    ) {
         session.beginConfiguration()
         defer { session.commitConfiguration() }
         removeInputsAndOutputs()
 
         try addInput(for: videoDevice)
-        let mode = try videoDevice.lockBestFormat()
+        let mode = try videoDevice.lockFormat(choice: choice)
         do {
             return (mode, try audioID.map { id in try attachAudio(deviceID: id, volume: volume) })
         } catch {

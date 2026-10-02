@@ -2,14 +2,14 @@ import AVFoundation
 import PlugviewCore
 
 extension AVCaptureDevice {
-    /// Selects the best mode for live play (see `bestModeIndex`) at its fastest frame rate.
+    /// Selects the user's chosen mode, or the best one for live play (see `modeIndex`), at its fastest frame rate.
     ///
     /// Leaves the device locked on success: `AVCaptureSession.startRunning()` resets the frame rate to the
     /// device default (20 fps on MS2130 cards) unless the device stays locked until the session runs.
     /// The caller must call `unlockForConfiguration()` once the session is running.
-    func lockBestFormat() throws(CaptureError) -> VideoMode {
+    func lockFormat(choice: ModeChoice? = nil) throws(CaptureError) -> VideoMode {
         let modes = formats.map(VideoMode.init(format:))
-        guard let index = bestModeIndex(in: modes) else { throw .noVideoFormats(name: localizedName) }
+        guard let index = modeIndex(in: modes, choice: choice) else { throw .noVideoFormats(name: localizedName) }
 
         do {
             try lockForConfiguration()

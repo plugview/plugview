@@ -10,13 +10,19 @@ public struct LauncherView: View {
     }
 
     public var body: some View {
-        content
-            .multilineTextAlignment(.center)
-            .padding(32)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(RadialGradient(colors: [Palette.glow, Palette.surface], center: UnitPoint(x: 0.5, y: 0.4), startRadius: 0, endRadius: 700))
-            // A CRT surface: dark in light mode too, so system controls must use dark-mode colors.
-            .environment(\.colorScheme, .dark)
+        ZStack {
+            // One identity per screen, so changing screens crossfades while updates within a screen do not.
+            content
+                .id(screenID)
+                .transition(.asymmetric(insertion: .opacity.combined(with: .scale(scale: 0.97)), removal: .opacity))
+        }
+        .animation(.easeOut(duration: 0.32), value: screenID)
+        .multilineTextAlignment(.center)
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(RadialGradient(colors: [Palette.glow, Palette.surface], center: UnitPoint(x: 0.5, y: 0.4), startRadius: 0, endRadius: 700))
+        // A CRT surface: dark in light mode too, so system controls must use dark-mode colors.
+        .environment(\.colorScheme, .dark)
     }
 
     @ViewBuilder private var content: some View {
@@ -66,6 +72,17 @@ public struct LauncherView: View {
         }
     }
 
+    private var screenID: String {
+        switch model.state {
+        case .permissionNeeded: model.continueToPermissions == nil ? "permission-prompt" : "onboarding"
+        case .permissionDenied(let kind): "denied-\(kind)"
+        case .waitingForSignal: "waiting"
+        case .ready: "ready"
+        case .playing: "playing"
+        case .failed: "failed"
+        }
+    }
+
     private func readyMessage(for devices: [DeviceInfo]) -> String? {
         guard devices.count > 1, model.play != nil else { return nil }
         return model.isAutoPlayPending ? "Playing the one you used last, or pick another." : "Pick one. plugview remembers your choice."
@@ -77,7 +94,7 @@ public struct LauncherView: View {
             : "Plug in \(model.waitingTarget).\nIt will show up here."
     }
 
-    private let helpURL = URL(string: "https://github.com/plugview/plugview#troubleshooting") ?? URL(filePath: "/")
+    private let helpURL = Links.troubleshooting
 }
 
 /// The artwork above a screen's title.
@@ -132,6 +149,7 @@ private struct DeviceRow: View {
     let name: String
     let details: String
     var isPickable = false
+    @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -146,25 +164,45 @@ private struct DeviceRow: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .frame(width: 340)
-        .background(Palette.raised, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Palette.line))
+        .background(Palette.raised.opacity(isPickable && isHovered ? 0.6 : 1), in: RoundedRectangle(cornerRadius: 10))
+        .background(isPickable && isHovered ? Palette.signal.opacity(0.08) : .clear, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(isPickable && isHovered ? Palette.signal.opacity(0.5) : Palette.line))
+        .contentShape(RoundedRectangle(cornerRadius: 10))
+        .onHover { isHovered = $0 }
+        .animation(.snappy(duration: 0.18), value: isHovered)
     }
 }
 
-/// Amber primary button, or an outlined one, in Geist Mono.
-private struct BrandButtonStyle: ButtonStyle {
+/// Amber primary button, or an outlined one, in Geist Mono; brightens on hover and sinks while pressed.
+struct BrandButtonStyle: ButtonStyle {
     let isPrimary: Bool
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        BrandButton(isPrimary: isPrimary, isPressed: configuration.isPressed) { configuration.label }
+    }
+}
+
+private struct BrandButton<Label: View>: View {
+    let isPrimary: Bool
+    let isPressed: Bool
+    @ViewBuilder let label: () -> Label
+    @State private var isHovered = false
+
+    var body: some View {
+        label()
             .font(BrandFonts.mono(13))
             .foregroundStyle(isPrimary ? Palette.cathode : Palette.bone)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(isPrimary ? Palette.signal : Color.clear, in: RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(isPrimary ? Color.clear : Palette.line))
-            .opacity(configuration.isPressed ? 0.75 : 1)
-            .contentShape(RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, 18)
+            .padding(.vertical, 11)
+            .background(isPrimary ? Palette.signal : .white.opacity(isHovered ? 0.06 : 0), in: RoundedRectangle(cornerRadius: 9))
+            .brightness(isPrimary && isHovered ? 0.06 : 0)
+            .overlay(RoundedRectangle(cornerRadius: 9).stroke(isPrimary ? Color.clear : Palette.line.opacity(isHovered ? 2 : 1)))
+            .shadow(color: isPrimary ? Palette.signal.opacity(isHovered ? 0.45 : 0.2) : .clear, radius: isHovered ? 14 : 8)
+            .scaleEffect(isPressed ? 0.96 : 1)
+            .contentShape(RoundedRectangle(cornerRadius: 9))
+            .onHover { isHovered = $0 }
+            .animation(.snappy(duration: 0.18), value: isHovered)
+            .animation(.snappy(duration: 0.12), value: isPressed)
     }
 }
 

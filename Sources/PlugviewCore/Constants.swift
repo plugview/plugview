@@ -25,6 +25,9 @@ public enum Tuning {
     /// Seconds without mouse movement before the controls and window buttons fade out over the video.
     public static let controlsHideSeconds = 2.5
 
+    /// Seconds between automatic update checks from the app (one a day).
+    public static let updateCheckIntervalSeconds = 24.0 * 60 * 60
+
     /// How long `plugview --measure` samples the capture pipeline.
     public static let measurementSeconds = 5.0
 

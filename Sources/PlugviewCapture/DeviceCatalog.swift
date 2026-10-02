@@ -13,11 +13,15 @@ public enum DeviceCatalog {
             .devices.map(makeDeviceInfo)
     }
 
-    /// The mode plugview would choose for a video device, without starting it.
-    public static func bestMode(ofVideoDevice uniqueID: String) -> VideoMode? {
-        guard let device = AVCaptureDevice(uniqueID: uniqueID) else { return nil }
-        let modes = device.formats.map(VideoMode.init(format:))
-        return bestModeIndex(in: modes).map { modes[$0] }
+    /// The mode plugview would start a video device in (`choice`, or the best), without starting it.
+    public static func mode(ofVideoDevice uniqueID: String, choice: ModeChoice? = nil) -> VideoMode? {
+        let modes = videoModes(ofVideoDevice: uniqueID)
+        return modeIndex(in: modes, choice: choice).map { modes[$0] }
+    }
+
+    /// Every format a video device offers; empty once it is unplugged.
+    public static func videoModes(ofVideoDevice uniqueID: String) -> [VideoMode] {
+        AVCaptureDevice(uniqueID: uniqueID)?.formats.map(VideoMode.init(format:)) ?? []
     }
 
     public static func printDevices() {

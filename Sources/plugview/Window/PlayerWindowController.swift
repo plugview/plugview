@@ -8,6 +8,8 @@ enum PlayerCommand {
     case toggleMute
     case changeVolume(byPercent: Int)
     case setVolume(percent: Int)
+    /// Scrolling over the controls: like the arrow keys in small steps, without a status line per step.
+    case scrollVolume(byPercent: Int)
 }
 
 /// The single resizable window: live preview, the launcher while no video is on screen, and key shortcuts.
@@ -19,9 +21,16 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
     private let playerView: PlayerView
     private var isPlaying = false
     private var hideChromeTask: Task<Void, Never>?
+    private let onClose: () -> Void
+    private let controls: ControlsModel
 
-    init(session: AVCaptureSession, launcher: LauncherModel, controls: ControlsModel, onCommand: @escaping (PlayerCommand) -> Void) {
+    init(
+        session: AVCaptureSession, launcher: LauncherModel, controls: ControlsModel, onCommand: @escaping (PlayerCommand) -> Void,
+        onClose: @escaping () -> Void
+    ) {
         playerView = PlayerView(session: session, launcher: launcher, controls: controls, onCommand: onCommand)
+        self.onClose = onClose
+        self.controls = controls
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1280, height: 720),
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -37,6 +46,8 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
         window.appearance = NSAppearance(named: .darkAqua)
         window.backgroundColor = .black
         window.contentView = playerView
+        // Closed to the menu bar, the same window comes back.
+        window.isReleasedWhenClosed = false
         window.collectionBehavior.insert(.fullScreenPrimary)
         window.center()
         window.setFrameAutosaveName("PlayerWindow")
@@ -57,7 +68,7 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
         window?.subtitle = details
         window?.contentAspectRatio = NSSize(width: width, height: height)
         fitContentHeight(toAspectRatio: Double(width) / Double(height))
-        playerView.isLauncherVisible = false
+        playerView.setLauncherVisible(false)
         isPlaying = true
         hideChrome()
     }
@@ -78,11 +89,16 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
     func showLauncher() {
         window?.title = "plugview"
         window?.subtitle = ""
-        playerView.isLauncherVisible = true
+        playerView.setLauncherVisible(true)
         isPlaying = false
         // Nothing to cover: the window buttons stay visible and the controls go away.
         hideChromeTask?.cancel()
         setChrome(isWindowButtonsVisible: true, isControlsVisible: false)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        hideChromeTask?.cancel()
+        onClose()
     }
 
     func windowDidEnterFullScreen(_ notification: Notification) {
@@ -107,7 +123,7 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     private func hideChromeUnlessHovered() {
         // Keep the controls up while the pointer rests on them, e.g. before dragging the volume.
-        if playerView.isMouseOverControls {
+        if playerView.isMouseOverControls || controls.isPickerOpen {
             revealChrome()
         } else {
             hideChrome()
@@ -115,7 +131,8 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func hideChrome() {
-        guard isPlaying else { return }
+        // An open resolution panel is anchored to the bar; the timer hides both once it closes.
+        guard isPlaying, !controls.isPickerOpen else { return }
         hideChromeTask?.cancel()
         setChrome(isWindowButtonsVisible: false, isControlsVisible: false)
         if window?.styleMask.contains(.fullScreen) == true { NSCursor.setHiddenUntilMouseMoves(true) }
@@ -123,7 +140,10 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
     private func setChrome(isWindowButtonsVisible: Bool, isControlsVisible: Bool) {
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.2
+            // Quick to appear when the mouse moves, unhurried to leave so it never feels like it vanished.
+            context.duration = isControlsVisible ? 0.22 : 0.4
+            context.timingFunction = CAMediaTimingFunction(name: isControlsVisible ? .easeOut : .easeInEaseOut)
+            context.allowsImplicitAnimation = true
             // In full screen macOS shows its own title bar on hover; leave it alone.
             if window?.styleMask.contains(.fullScreen) == false {
                 window?.standardWindowButton(.closeButton)?.superview?.animator().alphaValue = isWindowButtonsVisible ? 1 : 0
@@ -137,7 +157,8 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
 private final class PlayerView: NSView {
     private let previewLayer: AVCaptureVideoPreviewLayer
     private let launcherView: NSHostingView<LauncherView>
-    private let controlsView: NSHostingView<ControlsView>
+    private let controlsView: ControlsHostingView
+    private var controlsBottom: NSLayoutConstraint?
     private let onCommand: (PlayerCommand) -> Void
     var onMouseActivity: () -> Void = {}
     var onMouseExit: () -> Void = {}
@@ -147,7 +168,7 @@ private final class PlayerView: NSView {
         previewLayer.videoGravity = .resizeAspect
         previewLayer.backgroundColor = NSColor.black.cgColor
         launcherView = NSHostingView(rootView: LauncherView(model: launcher))
-        controlsView = NSHostingView(rootView: ControlsView(model: controls))
+        controlsView = ControlsHostingView(rootView: ControlsView(model: controls))
         self.onCommand = onCommand
         super.init(frame: .zero)
         wantsLayer = true
@@ -159,11 +180,15 @@ private final class PlayerView: NSView {
         controlsView.alphaValue = 0
         controlsView.isHidden = true
         addSubview(controlsView)
-        NSLayoutConstraint.activate([
-            controlsView.centerXAnchor.constraint(equalTo: centerXAnchor),
-            controlsView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -20),
-        ])
+        let controlsBottom = controlsView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -Self.controlsHiddenInset)
+        NSLayoutConstraint.activate([controlsView.centerXAnchor.constraint(equalTo: centerXAnchor), controlsBottom])
+        self.controlsBottom = controlsBottom
+        controlsView.onScroll = { [weak self] steps in self?.onCommand(.scrollVolume(byPercent: steps)) }
     }
+
+    /// The controls rise this far into place as they fade in, and sink back as they fade out.
+    private static let controlsShownInset: CGFloat = 22
+    private static let controlsHiddenInset: CGFloat = 10
 
     @available(*, unavailable)
     required init?(coder: NSCoder) {
@@ -176,10 +201,24 @@ private final class PlayerView: NSView {
 
     override var mouseDownCanMoveWindow: Bool { true }
 
-    /// Hidden while video plays, so it never covers the picture or takes clicks.
-    var isLauncherVisible: Bool {
-        get { !launcherView.isHidden }
-        set { launcherView.isHidden = !newValue }
+    /// Fades the launcher out to uncover the video (then hides it, so it takes no clicks), or back in.
+    func setLauncherVisible(_ isVisible: Bool) {
+        guard isVisible == launcherView.isHidden else { return }
+        if isVisible {
+            launcherView.alphaValue = 1
+            launcherView.isHidden = false
+            return
+        }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.35
+            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            launcherView.animator().alphaValue = 0
+        } completionHandler: { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, self.launcherView.alphaValue == 0 else { return }
+                self.launcherView.isHidden = true
+            }
+        }
     }
 
     var isMouseOverControls: Bool {
@@ -191,6 +230,7 @@ private final class PlayerView: NSView {
     func setControlsVisible(_ isVisible: Bool) {
         if isVisible { controlsView.isHidden = false }
         controlsView.animator().alphaValue = isVisible ? 1 : 0
+        controlsBottom?.animator().constant = -(isVisible ? Self.controlsShownInset : Self.controlsHiddenInset)
         if !isVisible {
             // Hide after the fade, unless the controls were shown again meanwhile.
             NSAnimationContext.current.completionHandler = { [weak self] in
@@ -234,4 +274,24 @@ private final class PlayerView: NSView {
     private static let escapeKeyCode: UInt16 = 53
     private static let downArrowKeyCode: UInt16 = 125
     private static let upArrowKeyCode: UInt16 = 126
+}
+
+/// The controls bar: clicks between its buttons do not drag the window, and scrolling over it changes the volume.
+private final class ControlsHostingView: NSHostingView<ControlsView> {
+    /// Called with whole volume steps in percent, positive for louder.
+    var onScroll: (Int) -> Void = { _ in }
+    private var pendingPercent: CGFloat = 0
+
+    override var mouseDownCanMoveWindow: Bool { false }
+
+    override func scrollWheel(with event: NSEvent) {
+        // Undo natural scrolling, so moving up on the wheel or trackpad is always louder.
+        let deviceDelta = event.isDirectionInvertedFromDevice ? -event.scrollingDeltaY : event.scrollingDeltaY
+        // A trackpad sends many small precise deltas; a mouse wheel sends one line per notch.
+        pendingPercent += event.hasPreciseScrollingDeltas ? deviceDelta / 4 : deviceDelta * CGFloat(Tuning.volumeStepPercent) / 2
+        let steps = Int(pendingPercent)
+        guard steps != 0 else { return }
+        pendingPercent -= CGFloat(steps)
+        onScroll(steps)
+    }
 }
