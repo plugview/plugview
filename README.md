@@ -1,4 +1,7 @@
-# plugview
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/plugview/plugview/main/docs/images/banner-dark.png">
+  <img alt="plugview: plug in. play." src="https://raw.githubusercontent.com/plugview/plugview/main/docs/images/banner-light.png">
+</picture>
 
 [![CI](https://github.com/plugview/plugview/actions/workflows/ci.yml/badge.svg)](https://github.com/plugview/plugview/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/plugview/plugview)](https://github.com/plugview/plugview/releases/latest)
@@ -8,19 +11,50 @@
 Plug in a capture card, open plugview (or type `plugview`), play.
 
 A tiny, open-source macOS app and command that shows your HDMI capture device (Nintendo Switch, PlayStation,
-Xbox, camera, …) in a resizable window with sound, as fast as the Mac can draw it. No scenes, no sources, no
-streaming setup.
+Xbox, Steam Deck, camera, …) in a resizable window with sound, as fast as the Mac can draw it. No scenes, no
+sources, no streaming setup.
+
+<p align="center"><img src="docs/images/playing.png" width="860" alt="plugview playing a pixel-art rooftop tennis game at 1080p60 through a UGREEN 25773 capture card, with the controls bar showing volume, screenshot, resolution and full screen"></p>
+<p align="center"><sub>A real capture through a UGREEN 25773. The game is Rooftop Rally, our own pixel-art test scene.</sub></p>
+
+## Why
+
+I often want to play while something runs on my Mac, and I have one screen. I wanted to plug the console in and
+see it in a window on the same computer I work on, like any other app. The usual answer is OBS, which is a full
+broadcast studio: scenes, sources, audio monitoring. Too much for something this simple. So plugview does one
+thing: it opens the capture card and plays, with sound, at the lowest latency the Mac can draw.
+
+## Features
 
 - **Low latency.** Frames go straight from the capture driver to the GPU compositor. plugview never copies a
   frame. It picks the card's native pixel format, keeps the frame rate locked, and uses 2.7 ms audio buffers.
   [Measured numbers](docs/PERFORMANCE.md).
-- **Smooth by default.** Prefers the highest frame rate: 1080p60 beats 4K30.
+- **Smooth by default.** Prefers the highest frame rate: 1080p60 beats 4K30. Or pick any mode the card offers;
+  the choice is remembered per card.
 - **Sound included.** Finds the card's own audio input and plays it on your current output. Never your microphone.
 - **Plug and play.** Start it before or after plugging in. Unplug and replug and it re-attaches; it also
   recovers after the Mac wakes from sleep.
-- **Stays awake.** The display won't sleep while you play with a controller.
+- **Lives in the menu bar.** Plug a card in and plugview opens and plays; close the window and the card is
+  released. Launch at login if you like.
+- **Screenshots.** Press `S` for a full-resolution PNG of the current frame.
+- **Your window.** Actual size, zoom, keep on top, full screen; full-range colors for cards that send gray blacks.
 - **Self-check.** `plugview --measure` reports the real frame rate and latency and tells you what to fix.
-- **Zero dependencies.** One native binary (about 1 MB per architecture), Apple frameworks only.
+- **Zero dependencies.** One native binary, Apple frameworks only. Under 2 MB to download.
+
+<table>
+  <tr>
+    <td width="58%"><img src="docs/images/video-modes.png" alt="The resolution menu over the video: Automatic, 1440p, 1080p and 720p with their frame rates, and the Full-range colors switch"></td>
+    <td rowspan="2" align="center"><img src="docs/images/menu-bar.png" width="300" alt="The plugview menu bar panel: live status for the capture card, resolution, open when a card is plugged in, launch at login and update settings"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/screenshot-saved.png" alt="A Screenshot saved notice with a Show button over the playing video"></td>
+  </tr>
+</table>
+
+Guides on the website: [setup](https://plugview.app/guide/), [capture cards that work](https://plugview.app/cards/),
+and step by step for [Switch](https://plugview.app/switch-on-mac/), [PlayStation](https://plugview.app/ps5-on-mac/),
+[Xbox](https://plugview.app/xbox-on-mac/) and [Steam Deck](https://plugview.app/steam-deck-on-mac/).
+How it compares: [plugview vs OBS](https://plugview.app/vs/obs/).
 
 Requires macOS 14 Sonoma or later, on Apple silicon or Intel.
 
