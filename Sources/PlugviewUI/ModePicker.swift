@@ -38,6 +38,19 @@ struct ModePicker: View {
                     ForEach(otherModes, id: \.self) { row(for: $0) }
                 }
             }
+            Divider().overlay(Palette.line).padding(.vertical, 4)
+            Toggle(isOn: Binding(get: { model.expandsLimitedRange }, set: { model.setExpandsLimitedRange($0) })) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Full-range colors").font(BrandFonts.sans(13, .semibold))
+                    Text("Turn on if blacks look gray and colors washed out").font(BrandFonts.mono(10)).foregroundStyle(Palette.muted)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+            .tint(Palette.signal)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
         }
         .padding(10)
         .frame(width: 280)

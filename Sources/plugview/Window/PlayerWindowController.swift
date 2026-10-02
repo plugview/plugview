@@ -1,5 +1,7 @@
 import AVFoundation
 import AppKit
+import CoreImage
+import PlugviewCapture
 import PlugviewCore
 import PlugviewUI
 import SwiftUI
@@ -10,6 +12,7 @@ enum PlayerCommand {
     case setVolume(percent: Int)
     /// Scrolling over the controls: like the arrow keys in small steps, without a status line per step.
     case scrollVolume(byPercent: Int)
+    case takeScreenshot
 }
 
 /// The single resizable window: live preview, the launcher while no video is on screen, and key shortcuts.
@@ -46,6 +49,7 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
         window.appearance = NSAppearance(named: .darkAqua)
         window.backgroundColor = .black
         window.contentView = playerView
+        if UserDefaults.standard.bool(forKey: Self.keepsOnTopKey) { window.level = .floating }
         // Closed to the menu bar, the same window comes back.
         window.isReleasedWhenClosed = false
         window.collectionBehavior.insert(.fullScreenPrimary)
@@ -62,8 +66,12 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
         fatalError("PlayerWindowController is created in code only")
     }
 
+    /// The playing video's size in pixels, for Actual Size.
+    private var videoPixelSize: NSSize?
+
     /// Names the window after the device, e.g. "UGREEN 25773" with "1920×1080 @ 60 fps · audio from UGREEN 25773".
     func showLiveVideo(deviceName: String, details: String, width: Int, height: Int) {
+        videoPixelSize = NSSize(width: width, height: height)
         window?.title = deviceName
         window?.subtitle = details
         window?.contentAspectRatio = NSSize(width: width, height: height)
@@ -94,6 +102,68 @@ final class PlayerWindowController: NSWindowController, NSWindowDelegate {
         // Nothing to cover: the window buttons stay visible and the controls go away.
         hideChromeTask?.cancel()
         setChrome(isWindowButtonsVisible: true, isControlsVisible: false)
+    }
+
+    /// Stretches limited-range video to full range on screen (see `LimitedRangeExpansion`).
+    func setExpandsLimitedRange(_ isOn: Bool) {
+        playerView.setExpandsLimitedRange(isOn)
+    }
+
+    // MARK: - Window size and level (View menu)
+
+    /// ⌘0: one video pixel per screen pixel, kept on screen.
+    @objc func showActualSize(_ sender: Any?) {
+        guard let window, let videoPixelSize else { return }
+        let scale = window.backingScaleFactor
+        resizeContent(to: NSSize(width: videoPixelSize.width / scale, height: videoPixelSize.height / scale))
+    }
+
+    @objc func zoomVideoIn(_ sender: Any?) { scaleContent(by: Self.zoomStep) }
+
+    @objc func zoomVideoOut(_ sender: Any?) { scaleContent(by: 1 / Self.zoomStep) }
+
+    /// ⌥⌘T: floats the window over other apps, e.g. to watch while you work; remembered.
+    @objc func toggleKeepOnTop(_ sender: Any?) {
+        guard let window else { return }
+        let keepsOnTop = window.level != .floating
+        window.level = keepsOnTop ? .floating : .normal
+        UserDefaults.standard.set(keepsOnTop, forKey: Self.keepsOnTopKey)
+    }
+
+    @objc func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        switch menuItem.action {
+        case #selector(toggleKeepOnTop(_:)):
+            menuItem.state = window?.level == .floating ? .on : .off
+            return true
+        case #selector(showActualSize(_:)), #selector(zoomVideoIn(_:)), #selector(zoomVideoOut(_:)):
+            return isPlaying && window?.styleMask.contains(.fullScreen) == false
+        default:
+            return true
+        }
+    }
+
+    private static let keepsOnTopKey = "KeepsWindowOnTop"
+    private static let zoomStep = 1.25
+
+    private func scaleContent(by factor: Double) {
+        guard let window else { return }
+        let size = window.contentRect(forFrameRect: window.frame).size
+        resizeContent(to: NSSize(width: size.width * factor, height: size.height * factor))
+    }
+
+    /// Resizes around the window's center, no smaller than 320 points wide and no larger than the screen.
+    private func resizeContent(to size: NSSize) {
+        guard let window, let screen = window.screen ?? NSScreen.main, !window.styleMask.contains(.fullScreen), size.width > 0 else { return }
+        let aspectRatio = size.height / size.width
+        let maxContent = window.contentRect(forFrameRect: screen.visibleFrame).size
+        let width = min(max(size.width, 320), maxContent.width, maxContent.height / aspectRatio)
+        let content = NSSize(width: width.rounded(), height: (width * aspectRatio).rounded())
+        var frame = window.frameRect(forContentRect: NSRect(origin: .zero, size: content))
+        frame.origin = NSPoint(x: window.frame.midX - frame.width / 2, y: window.frame.midY - frame.height / 2)
+        // Slide back onto the screen if the new size pokes out of it.
+        frame.origin.x = min(max(frame.minX, screen.visibleFrame.minX), screen.visibleFrame.maxX - frame.width)
+        frame.origin.y = min(max(frame.minY, screen.visibleFrame.minY), screen.visibleFrame.maxY - frame.height)
+        window.setFrame(frame, display: true, animate: true)
     }
 
     func windowWillClose(_ notification: Notification) {
@@ -158,6 +228,7 @@ private final class PlayerView: NSView {
     private let previewLayer: AVCaptureVideoPreviewLayer
     private let launcherView: NSHostingView<LauncherView>
     private let controlsView: ControlsHostingView
+    private let toastView: NSHostingView<ToastView>
     private var controlsBottom: NSLayoutConstraint?
     private let onCommand: (PlayerCommand) -> Void
     var onMouseActivity: () -> Void = {}
@@ -169,9 +240,12 @@ private final class PlayerView: NSView {
         previewLayer.backgroundColor = NSColor.black.cgColor
         launcherView = NSHostingView(rootView: LauncherView(model: launcher))
         controlsView = ControlsHostingView(rootView: ControlsView(model: controls))
+        toastView = NSHostingView(rootView: ToastView(model: controls))
         self.onCommand = onCommand
         super.init(frame: .zero)
         wantsLayer = true
+        // Lets the preview layer take the color-range filter; it costs nothing while no filter is set.
+        layerUsesCoreImageFilters = true
 
         launcherView.autoresizingMask = [.width, .height]
         addSubview(launcherView)
@@ -183,6 +257,10 @@ private final class PlayerView: NSView {
         let controlsBottom = controlsView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -Self.controlsHiddenInset)
         NSLayoutConstraint.activate([controlsView.centerXAnchor.constraint(equalTo: centerXAnchor), controlsBottom])
         self.controlsBottom = controlsBottom
+        toastView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(toastView)
+        NSLayoutConstraint.activate([toastView.centerXAnchor.constraint(equalTo: centerXAnchor), toastView.topAnchor.constraint(equalTo: topAnchor)])
+
         controlsView.onScroll = { [weak self] steps in self?.onCommand(.scrollVolume(byPercent: steps)) }
     }
 
@@ -242,6 +320,12 @@ private final class PlayerView: NSView {
         }
     }
 
+    func setExpandsLimitedRange(_ isOn: Bool) {
+        previewLayer.filters = isOn ? [Self.rangeExpansionFilter].compactMap { $0 } : nil
+    }
+
+    private static let rangeExpansionFilter: CIFilter? = CIFilter(name: "CIColorMatrix", parameters: CaptureSession.limitedRangeExpansionParameters)
+
     override func layout() {
         super.layout()
         launcherView.frame = bounds
@@ -263,6 +347,7 @@ private final class PlayerView: NSView {
         switch (event.keyCode, event.charactersIgnoringModifiers?.lowercased()) {
         case (_, "f"): window?.toggleFullScreen(nil)
         case (_, "m"): onCommand(.toggleMute)
+        case (_, "s"): onCommand(.takeScreenshot)
         case (_, "q"): NSApp.terminate(nil)
         case (Self.escapeKeyCode, _) where window?.styleMask.contains(.fullScreen) == true: window?.toggleFullScreen(nil)
         case (Self.upArrowKeyCode, _): onCommand(.changeVolume(byPercent: Tuning.volumeStepPercent))

@@ -13,6 +13,8 @@ public let usageText = """
           --no-audio        Do not play audio.
       -v, --volume <0-100>  Start volume in percent. Default: 100.
       -f, --fullscreen      Start in full screen.
+          --mode <WxH@fps>  Capture mode, e.g. 1280x720@60 (see --list).
+                            Default: the smoothest mode the device offers.
       -l, --list            List video and audio devices, then exit.
           --measure         Measure the capture pipeline's latency for a few seconds, then exit.
       -h, --help            Show this help.
@@ -21,6 +23,7 @@ public let usageText = """
     KEYS (in the window)
       F            Toggle full screen        Esc   Leave full screen
       M            Mute / unmute             ↑ ↓   Volume up / down
+      S            Save a screenshot         ⌘0    Actual size
       Q, ⌘Q        Quit                      ⌘M    Minimize
 
     Plug and play: start plugview before or after connecting the device;

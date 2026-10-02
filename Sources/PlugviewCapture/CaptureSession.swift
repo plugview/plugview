@@ -38,6 +38,7 @@ public final class CaptureSession: @unchecked Sendable {
     public let session = AVCaptureSession()
     private let queue = DispatchQueue(label: "plugview.capture-session", qos: .userInteractive)
     private let audioOutput = AVCaptureAudioPreviewOutput()
+    private let grabber = FrameGrabber()
 
     public init() {}
 
@@ -56,6 +57,16 @@ public final class CaptureSession: @unchecked Sendable {
             self.removeInputsAndOutputs()
         }
     }
+
+    /// Saves the next frame as a PNG in `~/Pictures/plugview` and returns its location.
+    public func saveScreenshot(expandsLimitedRange: Bool) async throws -> URL {
+        try await grabber.withNextFrame { frame in try Screenshot.save(frame, expandsLimitedRange: expandsLimitedRange) }
+    }
+
+    /// The `CIColorMatrix` inputs that expand limited-range video, for the preview layer's filter.
+    public static var limitedRangeExpansionParameters: [String: Any] { Screenshot.colorMatrixParameters }
+
+    public static var screenshotDirectory: URL { Screenshot.directory }
 
     public func setVolume(_ volume: Float) {
         queue.async { self.audioOutput.volume = volume }
@@ -81,6 +92,11 @@ public final class CaptureSession: @unchecked Sendable {
         removeInputsAndOutputs()
 
         try addInput(for: videoDevice)
+        // Screenshots only; without it the session plays exactly as before.
+        if session.canAddOutput(grabber.output) {
+            session.addOutput(grabber.output)
+            grabber.disable()
+        }
         let mode = try videoDevice.lockFormat(choice: choice)
         do {
             return (mode, try audioID.map { id in try attachAudio(deviceID: id, volume: volume) })

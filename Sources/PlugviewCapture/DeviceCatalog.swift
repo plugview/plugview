@@ -25,16 +25,18 @@ public enum DeviceCatalog {
     }
 
     public static func printDevices() {
-        printSection("Video devices", videoDevices())
+        printSection("Video devices", videoDevices(), showsModes: true)
         print("")
         printSection("Audio inputs", audioDevices())
     }
 
-    private static func printSection(_ title: String, _ devices: [DeviceInfo]) {
+    private static func printSection(_ title: String, _ devices: [DeviceInfo], showsModes: Bool = false) {
         print("\(title):")
         if devices.isEmpty { print("  (none)") }
         for device in devices {
             print("  \(device.name)  [\(device.transport)]  id: \(device.uniqueID)")
+            let modes = showsModes ? pickableModes(in: videoModes(ofVideoDevice: device.uniqueID)) : []
+            if !modes.isEmpty { print("    modes: \(modes.map(\.key).joined(separator: ", "))") }
         }
     }
 

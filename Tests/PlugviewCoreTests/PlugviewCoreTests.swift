@@ -22,6 +22,14 @@ import Testing
         #expect(try parseCommand(["--measure", "-d", "UGREEN", "--no-audio"]) == .measure(expected))
     }
 
+    @Test func readsTheCaptureMode() throws {
+        var expected = RunOptions()
+        expected.mode = ModeChoice(width: 1280, height: 720, frameRate: 60)
+        #expect(try parseCommand(["--mode", "1280x720@60"]) == .run(expected))
+        #expect(try parseCommand(["--mode", "1280×720@60"]) == .run(expected))
+        #expect(throws: OptionsError(description: "--mode must look like 1920x1080@60, got '720p'")) { try parseCommand(["--mode", "720p"]) }
+    }
+
     @Test func listAndHelpWinOverOtherOptions() throws {
         #expect(try parseCommand(["-d", "x", "--list"]) == .listDevices)
         #expect(try parseCommand(["--volume", "10", "-h"]) == .showHelp)

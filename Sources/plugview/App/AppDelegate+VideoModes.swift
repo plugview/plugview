@@ -1,5 +1,7 @@
+import AppKit
 import PlugviewCapture
 import PlugviewCore
+import PlugviewUI
 
 /// The resolution and frame rate choice, saved per device; only an app launch offers it.
 extension AppDelegate {
@@ -24,9 +26,35 @@ extension AppDelegate {
         return controls.devices.first?.uniqueID
     }
 
-    /// The saved mode for a device; a terminal launch always starts in the best mode, as in v0.1.
+    /// The saved mode for a device; a terminal launch uses `--mode`, or the best mode as in v0.1.
     func modeChoice(for video: DeviceInfo) -> ModeChoice? {
-        launchMode == .app ? settings.modeChoice(forDevice: video.uniqueID) : nil
+        launchMode == .app ? settings.modeChoice(forDevice: video.uniqueID) : options.mode
+    }
+
+    /// Turns the color-range fix on or off for the current device, on screen and in screenshots.
+    func setExpandsLimitedRange(_ isOn: Bool) {
+        guard launchMode == .app, let deviceID = currentDeviceID else { return }
+        settings.setExpandsLimitedRange(isOn, forDevice: deviceID)
+        refreshModes()
+    }
+
+    /// Saves the next frame to ~/Pictures/plugview and says where.
+    func takeScreenshot() {
+        guard case .playing = launcher.state else { return }
+        let expandsLimitedRange = controls.expandsLimitedRange
+        Task {
+            do {
+                let url = try await capture.saveScreenshot(expandsLimitedRange: expandsLimitedRange)
+                NSSound(named: "Grab")?.play()
+                print("Screenshot saved to \(url.path)")
+                controls.toast = Toast(symbol: "camera", message: "Screenshot saved", actionTitle: "Show") {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                }
+            } catch {
+                printError("screenshot failed: \(error)")
+                controls.toast = Toast(symbol: "exclamationmark.triangle", message: "Could not save the screenshot", isWarning: true)
+            }
+        }
     }
 
     /// Fills the mode menu for the current device; only an app launch offers it.
@@ -35,6 +63,8 @@ extension AppDelegate {
             controls.modes = []
             return
         }
+        controls.expandsLimitedRange = settings.expandsLimitedRange(forDevice: deviceID)
+        windowController.setExpandsLimitedRange(controls.expandsLimitedRange)
         let modes = DeviceCatalog.videoModes(ofVideoDevice: deviceID)
         controls.modes = pickableModes(in: modes)
         controls.modeChoice = settings.modeChoice(forDevice: deviceID)

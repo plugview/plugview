@@ -49,3 +49,16 @@ import Testing
         #expect(!isVersion(candidate, newerThan: current))
     }
 }
+
+@Suite struct ColorRangeTests {
+    @Test func expandsVideoRangeToFullRange() {
+        #expect(abs(LimitedRangeExpansion.expand(16.0 / 255) - 0) < 1e-9)
+        #expect(abs(LimitedRangeExpansion.expand(235.0 / 255) - 1) < 1e-9)
+        #expect(LimitedRangeExpansion.expand(0) == 0)
+        #expect(LimitedRangeExpansion.expand(1) == 1)
+    }
+
+    @Test func namesScreenshotsLikeMacOS() {
+        #expect(screenshotFileName(year: 2026, month: 10, day: 1, hour: 9, minute: 5, second: 7) == "plugview 2026-10-01 at 09.05.07.png")
+    }
+}

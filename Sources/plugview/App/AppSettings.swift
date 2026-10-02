@@ -54,9 +54,21 @@ struct AppSettings {
         defaults.set(choices, forKey: Key.modeChoices)
     }
 
+    /// Whether the color-range fix is on for a device.
+    func expandsLimitedRange(forDevice uniqueID: String) -> Bool {
+        defaults.dictionary(forKey: Key.expandsLimitedRange)?[uniqueID] as? Bool ?? false
+    }
+
+    func setExpandsLimitedRange(_ isOn: Bool, forDevice uniqueID: String) {
+        var values = defaults.dictionary(forKey: Key.expandsLimitedRange) ?? [:]
+        values[uniqueID] = isOn ? true : nil
+        defaults.set(values, forKey: Key.expandsLimitedRange)
+    }
+
     private enum Key {
         static let preferredDeviceID = "PreferredVideoDeviceID"
         static let modeChoices = "VideoModeChoices"
+        static let expandsLimitedRange = "ExpandsLimitedRange"
         static let opensOnPlugIn = "OpensOnPlugIn"
         static let keepsRunningInMenuBar = "KeepsRunningInMenuBar"
         static let checksForUpdates = "ChecksForUpdates"
