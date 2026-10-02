@@ -1,0 +1,54 @@
+name: Capture card report
+description: Tell us how plugview works with your capture card, good or bad. It goes on plugview.app/cards.
+title: "Card report: "
+labels: [card-report]
+body:
+  - type: input
+    id: card
+    attributes:
+      label: Capture card
+      description: Brand and model, as printed on the box.
+      placeholder: e.g. UGREEN 25773, Elgato Cam Link 4K
+    validations:
+      required: true
+  - type: input
+    id: chip
+    attributes:
+      label: Chip, if you know it
+      placeholder: e.g. MacroSilicon MS2130
+  - type: input
+    id: mac
+    attributes:
+      label: Mac and macOS
+      description: Mac model, Apple silicon or Intel, and `sw_vers -productVersion`.
+      placeholder: MacBook Pro M3, macOS 15.6
+    validations:
+      required: true
+  - type: dropdown
+    id: works
+    attributes:
+      label: Does it work?
+      options:
+        - "Yes: picture and sound"
+        - "Partly: picture only, or problems (describe below)"
+        - "No"
+    validations:
+      required: true
+  - type: textarea
+    id: list
+    attributes:
+      label: Output of `plugview --list`
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: measure
+    attributes:
+      label: Output of `plugview --measure`
+      description: Run it with the console on and the card connected to a USB 3 port.
+      render: text
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Console, resolution you play at, USB port or hub, anything that helped or broke it.
