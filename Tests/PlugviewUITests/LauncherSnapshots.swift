@@ -42,9 +42,34 @@ import Testing
             let model = LauncherModel()
             model.state = state
             configure(model)
-            let renderer = ImageRenderer(content: LauncherView(model: model).frame(width: 1280, height: 720))
-            let image = try #require(renderer.nsImage?.tiffRepresentation.flatMap(NSBitmapImageRep.init(data:)))
-            try #require(image.representation(using: .png, properties: [:])).write(to: outputDirectory.appending(path: "\(name).png"))
+            try render(LauncherView(model: model).frame(width: 1280, height: 720), to: outputDirectory.appending(path: "\(name).png"))
         }
+
+        let controls = ControlsModel()
+        controls.volumePercent = 36
+        controls.devices = [card, card]
+        controls.modes = [ModeChoice(width: 1920, height: 1080, frameRate: 60), ModeChoice(width: 1280, height: 720, frameRate: 60)]
+        controls.activeMode = controls.modes.first
+        try render(ControlsView(model: controls).padding(20).background(Color.gray), to: outputDirectory.appending(path: "7-controls.png"))
+
+        let cardModes = [(2560, 1440, 30), (1920, 1080, 60), (1600, 1200, 60), (1280, 1024, 60), (1280, 720, 60), (720, 480, 60)]
+        controls.modes = cardModes.map { ModeChoice(width: $0.0, height: $0.1, frameRate: $0.2) }
+        controls.modeChoice = controls.modes[4]
+        try render(ModePicker(model: controls) {}, to: outputDirectory.appending(path: "9-mode-picker.png"))
+
+        let launcher = LauncherModel()
+        launcher.state = .playing(card)
+        let menuBar = MenuBarModel(version: "0.3.0")
+        menuBar.playingDetails = "1920×1080 @ 60 fps · audio from UGREEN 25773"
+        menuBar.canLaunchAtLogin = true
+        menuBar.updateStatus = .available(version: "0.3.1", url: URL(filePath: "/"))
+        try render(MenuBarView(launcher: launcher, controls: controls, menuBar: menuBar), to: outputDirectory.appending(path: "8-menu-bar.png"))
+    }
+
+    private func render(_ view: some View, to url: URL) throws {
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = 2
+        let image = try #require(renderer.nsImage?.tiffRepresentation.flatMap(NSBitmapImageRep.init(data:)))
+        try #require(image.representation(using: .png, properties: [:])).write(to: url)
     }
 }

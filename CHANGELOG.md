@@ -6,6 +6,26 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- A menu bar icon (app launch only) that shows whether a card is waiting, ready, or playing, with a panel for the
+  status, the video choices, and the settings below.
+- Closing the window releases the capture card and keeps plugview in the menu bar; plugging a card in opens the
+  window and plays. Both can be turned off. Launch at login.
+- Resolution and frame rate: pick any mode the card offers, or Automatic (the smoothest, as before). The choice is
+  remembered per card. The terminal command keeps always using the best mode.
+- Update check: once a day, and from **Check for Updates…** in the app menu, plugview asks GitHub for the latest
+  release and offers the download. It can be turned off; it is plugview's only network request.
+- About plugview, Settings… (⌘,), Hide, and Close (⌘W) in the menus.
+
+### Changed
+
+- Easier controls bar: every button is 32 points tall and lights up on hover, the volume responds to a click or
+  drag anywhere on its track and to scrolling over the bar, and the speaker icon follows the volume.
+- Smoother motion: the controls rise and fade in, the launcher screens crossfade, and the launcher fades out to
+  reveal the video instead of cutting to it.
+- The display stays awake only while the window is open.
+
 ## [0.2.0] - 2026-10-01
 
 plugview is now also a Mac app. Typed in a terminal, the command behaves exactly as in 0.1.0.

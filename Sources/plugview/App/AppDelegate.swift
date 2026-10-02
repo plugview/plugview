@@ -8,26 +8,37 @@ import PlugviewUI
 ///
 /// Every change goes through `send(_:)`, which moves the launcher state and updates the window. Terminal launches
 /// also print status lines and exit when camera access is denied, exactly as v0.1.
+///
+/// An app launch also gets a menu bar icon: closing the window then releases the card and keeps plugview there,
+/// watching for a card to open itself again.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let options: RunOptions
-    private let launchMode: LaunchMode
-    private let launcher = LauncherModel()
-    private let controls = ControlsModel()
+    let options: RunOptions
+    let launchMode: LaunchMode
+    let launcher = LauncherModel()
+    let controls = ControlsModel()
     private let capture = CaptureSession()
-    private lazy var windowController = PlayerWindowController(session: capture.session, launcher: launcher, controls: controls) {
-        [weak self] command in self?.perform(command)
-    }
+    let settings = AppSettings()
+    let menuBar = MenuBarModel(version: plugviewVersion)
+    lazy var settingsController = SettingsController(model: menuBar, settings: settings)
+    var menuBarController: MenuBarController?
+    lazy var windowController = PlayerWindowController(
+        session: capture.session, launcher: launcher, controls: controls,
+        onCommand: { [weak self] command in self?.perform(command) },
+        onClose: { [weak self] in self?.windowDidClose() }
+    )
 
     private var attachedDeviceIDs: Set<String> = []
-    private var isAttaching = false
-    private var isAudioPermitted = false
+    var isAttaching = false
+    var isAudioPermitted = false
     private var volumePercent: Int
     private var isMuted = false
     private var hasReportedWaiting = false
     private var notificationObservers: [any NSObjectProtocol] = []
-    private var displaySleepActivity: (any NSObjectProtocol)?
-    private var autoPlayTask: Task<Void, Never>?
+    var displaySleepActivity: (any NSObjectProtocol)?
+    var autoPlayTask: Task<Void, Never>?
+    /// Playable devices seen last, to tell a newly plugged card from one that was already there.
+    private var knownPlayableIDs: Set<String> = []
 
     init(options: RunOptions, launchMode: LaunchMode) {
         self.options = options
@@ -40,28 +51,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controls.toggleMute = { [weak self] in self?.perform(.toggleMute) }
         controls.toggleFullScreen = { [weak self] in self?.windowController.window?.toggleFullScreen(nil) }
         controls.selectDevice = { [weak self] device in self?.switchPlayback(to: device) }
+        controls.selectMode = { [weak self] choice in self?.selectMode(choice) }
+        menuBar.openWindow = { [weak self] in self?.openWindow(isPlaying: true) }
+        menuBar.quit = { NSApp.terminate(nil) }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Before the window exists, so it opens with the frame saved under the old bundle id.
         let defaults = UserDefaults.standard
         LegacyDefaults.migrate(from: defaults.persistentDomain(forName: LegacyDefaults.domainName), into: defaults)
-        NSApp.mainMenu = makeMainMenu()
+        NSApp.mainMenu = makeMainMenu(hasMenuBarItem: launchMode == .app)
         BrandFonts.register()
-        windowController.showWindow(nil)
-        windowController.showLauncher()
-        NSApp.activate()
+        if launchMode == .app { setUpMenuBar() }
+
+        // Started at login, plugview waits in the menu bar; it still needs the window to ask for permissions.
+        if launchMode == .app && Self.isLaunchedAsLoginItem && !Permissions.isUndetermined(for: .video) {
+            menuBar.isWindowOpen = false
+            NSApp.setActivationPolicy(.accessory)
+        } else {
+            windowController.showWindow(nil)
+            windowController.showLauncher()
+            NSApp.activate()
+            beginDisplayActivity()
+        }
         // Toggling during launch is ignored; wait until the window is on screen and the app is active.
         if options.startsInFullScreen {
             DispatchQueue.main.async { [weak self] in self?.windowController.window?.toggleFullScreen(nil) }
         }
-
-        // A game controller is not keyboard/mouse input, so without this the display would sleep mid-game.
-        // latencyCritical also keeps App Nap and timer coalescing away from the capture pipeline.
-        displaySleepActivity = ProcessInfo.processInfo.beginActivity(
-            options: [.idleDisplaySleepDisabled, .userInitiated, .latencyCritical],
-            reason: "Showing live capture video"
-        )
         observeDeviceChanges()
 
         if launchMode == .app && Permissions.isUndetermined(for: .video) {
@@ -75,11 +91,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task { await requestPermissionsAndAttach() }
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        launchMode == .terminal || !settings.keepsRunningInMenuBar
+    }
+
+    /// Opening plugview again (Finder, Spotlight, `open -a`) while it waits in the menu bar brings the window back.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        if launchMode == .app && !menuBar.isWindowOpen { openWindow(isPlaying: false) }
+        return true
+    }
 
     func applicationWillTerminate(_ notification: Notification) {
         capture.stop()
-        if let displaySleepActivity { ProcessInfo.processInfo.endActivity(displaySleepActivity) }
+        endDisplayActivity()
     }
 
     // MARK: - Permissions
@@ -114,13 +138,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Attaching devices
 
     /// Reports the connected devices and, when nothing is playing, starts the best one.
-    private func attachIfPossible() async {
+    ///
+    /// While the window is closed it only updates the menu bar, and opens the window when `isPlugIn` brought a new
+    /// card and the user wants that.
+    func attachIfPossible(isPlugIn: Bool = false) async {
         let playable = playableVideoDevices(from: DeviceCatalog.videoDevices(), matching: options.videoQuery)
         // A terminal launch picks exactly as v0.1; only the app remembers the user's pick.
-        let preferredID = launchMode == .app ? UserDefaults.standard.string(forKey: Self.preferredDeviceKey) : nil
+        let preferredID = launchMode == .app ? settings.preferredDeviceID : nil
         let devices = preferredFirst(playable, preferredID: preferredID)
+        let playableIDs = Set(devices.map(\.uniqueID))
+        let hasNewDevice = !playableIDs.subtracting(knownPlayableIDs).isEmpty
+        knownPlayableIDs = playableIDs
         controls.devices = devices
         send(.devicesChanged(devices))
+        refreshModes()
+        if launchMode == .app && !menuBar.isWindowOpen {
+            if case .ready(let devices) = launcher.state { launcher.readyDetails = readyDetails(for: devices) }
+            if isPlugIn && hasNewDevice && settings.opensOnPlugIn { openWindow(isPlaying: false) }
+            return
+        }
         if case .playing(let video) = launcher.state {
             await attachLateAudio(to: video)
             return
@@ -129,7 +165,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         switch launcher.state {
         case .ready(let devices):
-            launcher.readyDetails = Dictionary(devices.map { ($0.uniqueID, readyDetails(for: $0)) }) { first, _ in first }
+            launcher.readyDetails = readyDetails(for: devices)
             switch launchMode {
             case .terminal:
                 guard let video = devices.first else { return }
@@ -166,7 +202,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func play(_ video: DeviceInfo, isUserChoice: Bool) async {
+    func play(_ video: DeviceInfo, isUserChoice: Bool) async {
         autoPlayTask?.cancel()
         autoPlayTask = nil
         // Cleared only once the video covers the launcher, so the buttons never jump the layout.
@@ -176,39 +212,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // The card may have been unplugged during the countdown.
         guard case .ready(let devices) = launcher.state, devices.contains(video), attachedDeviceIDs.isEmpty, !isAttaching else { return }
-        if isUserChoice { UserDefaults.standard.set(video.uniqueID, forKey: Self.preferredDeviceKey) }
+        if isUserChoice { settings.preferredDeviceID = video.uniqueID }
         await attach(video)
     }
 
     /// The device menu over the video: switches to another device and remembers it.
     private func switchPlayback(to video: DeviceInfo) {
         guard case .playing(let current) = launcher.state, current != video, !isAttaching else { return }
-        UserDefaults.standard.set(video.uniqueID, forKey: Self.preferredDeviceKey)
+        settings.preferredDeviceID = video.uniqueID
         Task { await attach(video) }
     }
 
-    private static let preferredDeviceKey = "PreferredVideoDeviceID"
-
-    /// "1920×1080 · 60 fps · audio on" for the ready screen, read without starting the device.
-    private func readyDetails(for video: DeviceInfo) -> String {
-        let hasAudio =
-            options.isAudioEnabled && isAudioPermitted
-            && selectAudioDevice(from: DeviceCatalog.audioDevices(), for: video, matching: options.audioQuery) != nil
-        let mode = DeviceCatalog.bestMode(ofVideoDevice: video.uniqueID).map { "\($0.width)×\($0.height) · \(Int($0.maxFrameRate.rounded())) fps · " }
-        return (mode ?? "") + (hasAudio ? "audio on" : "no audio")
-    }
-
-    private func attach(_ video: DeviceInfo) async {
+    func attach(_ video: DeviceInfo) async {
         let audio = selectAudio(for: video)
 
         isAttaching = true
         defer { isAttaching = false }
         do {
-            let activeCapture = try await capture.start(videoID: video.uniqueID, audioID: audio?.uniqueID, volume: effectiveVolume)
+            let activeCapture = try await capture.start(
+                videoID: video.uniqueID, mode: modeChoice(for: video), audioID: audio?.uniqueID, volume: effectiveVolume)
             attachedDeviceIDs = Set([video.uniqueID, audio?.uniqueID].compactMap { $0 })
             hasReportedWaiting = false
+            // The window was closed while the device started: give the card back right away.
+            if launchMode == .app && !menuBar.isWindowOpen {
+                detach(reason: "Window closed; plugview stays in the menu bar.")
+                return
+            }
             send(.playbackStarted(video))
             controls.playingDeviceID = video.uniqueID
+            refreshModes()
             showAttached(activeCapture)
         } catch {
             printError("\(error)")
@@ -235,7 +267,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return audio
     }
 
-    private func detach(reason: String) {
+    func detach(reason: String) {
         guard !attachedDeviceIDs.isEmpty else { return }
         attachedDeviceIDs = []
         capture.stop()
@@ -253,6 +285,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let mode = activeCapture.mode
         let audioSummary = activeCapture.audioName.map { "audio from \($0)" } ?? "no audio"
         print("Showing \(activeCapture.videoName) · \(mode.summary), \(audioSummary)")
+        menuBar.playingDetails = "\(mode.summary) · \(audioSummary)"
         windowController.showLiveVideo(
             deviceName: activeCapture.videoName, details: "\(mode.summary) · \(audioSummary)", width: mode.width, height: mode.height)
     }
@@ -261,6 +294,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func send(_ event: LauncherEvent) {
         launcher.state = nextLauncherState(after: launcher.state, on: event)
+        menuBarController?.update(for: launcher.state)
         if case .playing = launcher.state { return }
         windowController.showLauncher()
     }
@@ -271,7 +305,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             center.addObserver(forName: AVCaptureDevice.wasConnectedNotification, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated {
                     guard let self else { return }
-                    Task { await self.attachIfPossible() }
+                    Task { await self.attachIfPossible(isPlugIn: true) }
                 }
             },
             center.addObserver(forName: AVCaptureDevice.wasDisconnectedNotification, object: nil, queue: .main) { [weak self] notification in
@@ -306,7 +340,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch command {
         case .toggleMute:
             isMuted.toggle()
-        case .changeVolume(let deltaPercent):
+        case .changeVolume(let deltaPercent), .scrollVolume(let deltaPercent):
             volumePercent = min(100, max(0, volumePercent + deltaPercent))
             isMuted = false
         case .setVolume(let percent):
@@ -316,8 +350,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         capture.setVolume(effectiveVolume)
         controls.volumePercent = volumePercent
         controls.isMuted = isMuted
-        // The slider sends a value per step of a drag; only keys print, as in v0.1.
-        if case .setVolume = command { return }
+        // The slider and scrolling send a value per step; only keys print, as in v0.1.
+        switch command {
+        case .setVolume, .scrollVolume: return
+        case .toggleMute, .changeVolume: break
+        }
         print(isMuted ? "Muted" : "Volume \(volumePercent)%")
     }
 }

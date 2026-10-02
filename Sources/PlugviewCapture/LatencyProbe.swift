@@ -79,7 +79,7 @@ public final class LatencyProbe: NSObject, AVCaptureVideoDataOutputSampleBufferD
             requestLowLatencyAudioBuffers(inputUID: audioDevice.uniqueID)
         }
         // Last, so no later session change can reset the format before startRunning().
-        return try videoDevice.lockBestFormat()
+        return try videoDevice.lockFormat()
     }
 
     private func add(_ input: AVCaptureInput) throws {

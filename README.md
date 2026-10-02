@@ -101,9 +101,24 @@ plugview -v 50           # start at 50 % volume
 | `Q` / `⌘Q` | Quit |
 
 The video fills the window with no title bar. Move the mouse to show the window buttons and a controls bar
-(mute, volume, full screen, and the capture device when more than one is connected); they fade out when the
-mouse rests. Drag the video to move the window. Resize it by dragging an edge; it keeps the video's aspect ratio
-and remembers its size and position.
+(mute, volume, resolution, full screen, and the capture device when more than one is connected); they fade out
+when the mouse rests. Scroll over the bar to change the volume. Drag the video to move the window. Resize it by
+dragging an edge; it keeps the video's aspect ratio and remembers its size and position.
+
+### Menu bar
+
+Opened as an app, plugview also puts its mark in the menu bar: empty while it waits, with the play triangle once a
+card has signal, filled while it plays. Click it for the status, the resolution and frame rate (Automatic picks
+the smoothest; your choice is remembered per card), and the settings:
+
+- **Open when a card is plugged in**: with plugview in the menu bar, plugging in a card opens the window and plays.
+- **Stay in the menu bar when closed**: closing the window releases the card (the camera light goes off) and
+  plugview keeps waiting in the menu bar. Turn it off to quit when the window closes, as before.
+- **Launch at login**, and **Check for updates daily** (asks GitHub for the latest release; see
+  [SECURITY.md](SECURITY.md)).
+
+Typed in a terminal, plugview has no menu bar icon, always starts in the best mode, and quits when its window
+closes, exactly as before.
 
 ## First run: permissions
 
