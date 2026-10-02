@@ -17,6 +17,13 @@ All notable changes to plugview are listed here. The format follows
 - Update check: once a day, and from **Check for Updates…** in the app menu, plugview asks GitHub for the latest
   release and offers the download. It can be turned off; it is plugview's only network request.
 - About plugview, Settings… (⌘,), Hide, and Close (⌘W) in the menus.
+- Screenshots: `S` or the camera button saves the current frame at full resolution as a PNG in
+  `~/Pictures/plugview`, with a notice to show it in Finder.
+- Full-range colors, per card, for cards that send washed-out video (gray blacks).
+- View menu: Actual Size (⌘0), Zoom In (⌘+), Zoom Out (⌘-), and Keep on Top (⌥⌘T, remembered).
+- `--mode WxH@fps` picks the capture mode from the terminal (also for `--measure`); `--list` shows each video
+  device's modes.
+- The app says when it plays without sound because microphone access is off, with a button to System Settings.
 
 ### Changed
 

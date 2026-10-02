@@ -17,7 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let launchMode: LaunchMode
     let launcher = LauncherModel()
     let controls = ControlsModel()
-    private let capture = CaptureSession()
+    let capture = CaptureSession()
     let settings = AppSettings()
     let menuBar = MenuBarModel(version: plugviewVersion)
     lazy var settingsController = SettingsController(model: menuBar, settings: settings)
@@ -34,6 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var volumePercent: Int
     private var isMuted = false
     private var hasReportedWaiting = false
+    private var hasWarnedAboutSound = false
     private var notificationObservers: [any NSObjectProtocol] = []
     var displaySleepActivity: (any NSObjectProtocol)?
     var autoPlayTask: Task<Void, Never>?
@@ -52,6 +53,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controls.toggleFullScreen = { [weak self] in self?.windowController.window?.toggleFullScreen(nil) }
         controls.selectDevice = { [weak self] device in self?.switchPlayback(to: device) }
         controls.selectMode = { [weak self] choice in self?.selectMode(choice) }
+        controls.setExpandsLimitedRange = { [weak self] isOn in self?.setExpandsLimitedRange(isOn) }
+        controls.takeScreenshot = { [weak self] in self?.perform(.takeScreenshot) }
         menuBar.openWindow = { [weak self] in self?.openWindow(isPlaying: true) }
         menuBar.quit = { NSApp.terminate(nil) }
     }
@@ -286,8 +289,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let audioSummary = activeCapture.audioName.map { "audio from \($0)" } ?? "no audio"
         print("Showing \(activeCapture.videoName) · \(mode.summary), \(audioSummary)")
         menuBar.playingDetails = "\(mode.summary) · \(audioSummary)"
+        warnAboutMissingSoundOnce()
         windowController.showLiveVideo(
             deviceName: activeCapture.videoName, details: "\(mode.summary) · \(audioSummary)", width: mode.width, height: mode.height)
+    }
+
+    /// The app plays silently when microphone access is off; say so once, with the way to turn it on.
+    private func warnAboutMissingSoundOnce() {
+        guard launchMode == .app, options.isAudioEnabled, !isAudioPermitted, !hasWarnedAboutSound else { return }
+        hasWarnedAboutSound = true
+        controls.toast = Toast(symbol: "speaker.slash", message: "No sound: microphone access is off", actionTitle: "Open Settings", isWarning: true) {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") { NSWorkspace.shared.open(url) }
+        }
     }
 
     // MARK: - State
@@ -338,6 +351,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func perform(_ command: PlayerCommand) {
         switch command {
+        case .takeScreenshot:
+            takeScreenshot()
+            return
         case .toggleMute:
             isMuted.toggle()
         case .changeVolume(let deltaPercent), .scrollVolume(let deltaPercent):
@@ -352,7 +368,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controls.isMuted = isMuted
         // The slider and scrolling send a value per step; only keys print, as in v0.1.
         switch command {
-        case .setVolume, .scrollVolume: return
+        case .setVolume, .scrollVolume, .takeScreenshot: return
         case .toggleMute, .changeVolume: break
         }
         print(isMuted ? "Muted" : "Volume \(volumePercent)%")

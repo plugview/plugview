@@ -5,6 +5,8 @@ public struct RunOptions: Equatable, Sendable {
     public var isAudioEnabled = true
     public var volumePercent = 100
     public var startsInFullScreen = false
+    /// The capture mode to start in instead of the best one, e.g. `1280x720@60`.
+    public var mode: ModeChoice?
 
     public init() {}
 }
@@ -45,6 +47,7 @@ public func parseCommand(_ arguments: [String]) throws(OptionsError) -> Command 
         case "--measure": isMeasuring = true
         case "-f", "--fullscreen": options.startsInFullScreen = true
         case "-v", "--volume": options.volumePercent = try requireVolumePercent(for: argument, from: &remaining)
+        case "--mode": options.mode = try requireMode(for: argument, from: &remaining)
         default: throw OptionsError(description: "unknown option '\(argument)'")
         }
     }
@@ -68,4 +71,12 @@ private func requireVolumePercent(for option: String, from remaining: inout Arra
         throw OptionsError(description: "\(option) must be a whole number from 0 to 100, got '\(value)'")
     }
     return percent
+}
+
+private func requireMode(for option: String, from remaining: inout ArraySlice<String>) throws(OptionsError) -> ModeChoice {
+    let value = try requireValue(for: option, from: &remaining)
+    guard let mode = ModeChoice(key: value.lowercased().replacingOccurrences(of: "×", with: "x")) else {
+        throw OptionsError(description: "\(option) must look like 1920x1080@60, got '\(value)'")
+    }
+    return mode
 }

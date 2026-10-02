@@ -23,7 +23,9 @@ see or change. Everything between the driver and the compositor is tuned below.
 | Prefer smooth frame rates (≥ 50 fps) over resolution | 1080p60 feels faster than 4K30. | — |
 | 128-frame Core Audio buffers on card input and playback | macOS defaults to 512 frames (10.7 ms at 48 kHz). 64 frames caused spikes. | Card audio 12.4 → 4.3 ms; speakers 27 → 19 ms |
 | `userInteractive` capture queue and `latencyCritical` activity | Keeps App Nap and timer coalescing away from capture. | Not measured separately |
-| Display sleep disabled while running | A controller is not keyboard/mouse input. | — |
+| Display sleep disabled while the window is open | A controller is not keyboard/mouse input. | — |
+| Screenshot output attached but disabled | Its connection is enabled for one frame only, so no frame is copied while you play and the session is never reconfigured. | App CPU 5.6–8.5 % (0.2.0) vs 6.5–6.7 % (with it), 10 s windows at 1080p60: no difference |
+| Full-range colors is opt-in | A Core Image filter on the preview layer, applied by the window server on the GPU. | Off by default; not measured |
 
 The buffer and scheduling changes apply to plugview's process only, and macOS undoes them when plugview exits.
 

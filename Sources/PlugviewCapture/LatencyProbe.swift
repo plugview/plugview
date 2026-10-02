@@ -35,7 +35,7 @@ public final class LatencyProbe: NSObject, AVCaptureVideoDataOutputSampleBufferD
 
         print("Measuring \(video.name) for \(Int(Tuning.measurementSeconds)) seconds…")
         do {
-            try await LatencyProbe().measure(videoID: video.uniqueID, audioID: audio?.uniqueID)
+            try await LatencyProbe().measure(videoID: video.uniqueID, mode: options.mode, audioID: audio?.uniqueID)
             return EXIT_SUCCESS
         } catch {
             printError("\(error)")
@@ -43,11 +43,11 @@ public final class LatencyProbe: NSObject, AVCaptureVideoDataOutputSampleBufferD
         }
     }
 
-    private func measure(videoID: String, audioID: String?) async throws {
+    private func measure(videoID: String, mode: ModeChoice?, audioID: String?) async throws {
         guard let videoDevice = AVCaptureDevice(uniqueID: videoID) else { throw CaptureError.deviceUnavailable(id: videoID) }
         let audioDevice = audioID.flatMap(AVCaptureDevice.init(uniqueID:))
 
-        let requested = try configure(video: videoDevice, audio: audioDevice)
+        let requested = try configure(video: videoDevice, mode: mode, audio: audioDevice)
         session.startRunning()
         let deliveredFrameRateSetting = videoDevice.activeFrameRate
         videoDevice.unlockForConfiguration()
@@ -61,7 +61,7 @@ public final class LatencyProbe: NSObject, AVCaptureVideoDataOutputSampleBufferD
     }
 
     /// Mirrors `CaptureSession`: same format choice and audio buffers, plus data outputs to timestamp samples.
-    private func configure(video videoDevice: AVCaptureDevice, audio audioDevice: AVCaptureDevice?) throws -> VideoMode {
+    private func configure(video videoDevice: AVCaptureDevice, mode: ModeChoice?, audio audioDevice: AVCaptureDevice?) throws -> VideoMode {
         session.beginConfiguration()
         defer { session.commitConfiguration() }
 
@@ -79,7 +79,7 @@ public final class LatencyProbe: NSObject, AVCaptureVideoDataOutputSampleBufferD
             requestLowLatencyAudioBuffers(inputUID: audioDevice.uniqueID)
         }
         // Last, so no later session change can reset the format before startRunning().
-        return try videoDevice.lockFormat()
+        return try videoDevice.lockFormat(choice: mode)
     }
 
     private func add(_ input: AVCaptureInput) throws {

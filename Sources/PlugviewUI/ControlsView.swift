@@ -28,6 +28,13 @@ public struct ControlsView: View {
             .padding(.leading, 6)
             .padding(.trailing, 10)
 
+            Button(action: model.takeScreenshot) {
+                Image(systemName: "camera").frame(width: 18)
+            }
+            .buttonStyle(ControlButtonStyle())
+            .help("Screenshot (S)")
+            .accessibilityLabel("Screenshot")
+
             if !model.modes.isEmpty { modeMenu }
             if model.devices.count > 1 { deviceMenu }
 

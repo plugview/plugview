@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 import PlugviewCore
 
@@ -18,6 +19,10 @@ public final class ControlsModel {
     public var activeMode: ModeChoice?
     /// The resolution panel is open; the window keeps the controls up meanwhile.
     public var isPickerOpen = false
+    /// Stretches limited-range video to full range for the current device (gray blacks, dull whites).
+    public var expandsLimitedRange = false
+    /// A short message over the video, e.g. after a screenshot; it goes away on its own.
+    public var toast: Toast?
 
     public var setVolume: (Int) -> Void = { _ in }
     public var toggleMute: () -> Void = {}
@@ -25,10 +30,30 @@ public final class ControlsModel {
     public var selectDevice: (DeviceInfo) -> Void = { _ in }
     /// Picks a mode for the current device, or `nil` for automatic; a playing device restarts in it.
     public var selectMode: (ModeChoice?) -> Void = { _ in }
+    public var setExpandsLimitedRange: (Bool) -> Void = { _ in }
+    public var takeScreenshot: () -> Void = {}
 
     public init() {}
 
     var effectiveVolumePercent: Int { isMuted ? 0 : volumePercent }
+}
+
+/// A message shown over the video for a few seconds, with an optional action.
+public struct Toast: Identifiable {
+    public let id = UUID()
+    public let symbol: String
+    public let message: String
+    public let actionTitle: String?
+    public let action: (() -> Void)?
+    public let isWarning: Bool
+
+    public init(symbol: String, message: String, actionTitle: String? = nil, isWarning: Bool = false, action: (() -> Void)? = nil) {
+        self.symbol = symbol
+        self.message = message
+        self.actionTitle = actionTitle
+        self.action = action
+        self.isWarning = isWarning
+    }
 }
 
 extension ModeChoice {

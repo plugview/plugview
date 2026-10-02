@@ -18,6 +18,14 @@ func makeMainMenu(hasMenuBarItem: Bool) -> NSMenu {
     let viewMenu = NSMenu(title: "View")
     let fullScreenItem = viewMenu.addItem(withTitle: "Toggle Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
     fullScreenItem.keyEquivalentModifierMask = [.control, .command]
+    viewMenu.addItem(.separator())
+    // PlayerWindowController handles these through the responder chain.
+    viewMenu.addItem(withTitle: "Actual Size", action: #selector(PlayerWindowController.showActualSize(_:)), keyEquivalent: "0")
+    viewMenu.addItem(withTitle: "Zoom In", action: #selector(PlayerWindowController.zoomVideoIn(_:)), keyEquivalent: "+")
+    viewMenu.addItem(withTitle: "Zoom Out", action: #selector(PlayerWindowController.zoomVideoOut(_:)), keyEquivalent: "-")
+    viewMenu.addItem(.separator())
+    let keepOnTopItem = viewMenu.addItem(withTitle: "Keep on Top", action: #selector(PlayerWindowController.toggleKeepOnTop(_:)), keyEquivalent: "t")
+    keepOnTopItem.keyEquivalentModifierMask = [.option, .command]
 
     let windowMenu = NSMenu(title: "Window")
     windowMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")

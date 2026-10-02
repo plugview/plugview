@@ -89,6 +89,7 @@ plugview --measure       # measure frame rate and latency, with advice
 plugview -d "Cam Link" -a "Cam Link"   # pick devices by name
 plugview --no-audio      # video only
 plugview -v 50           # start at 50 % volume
+plugview --mode 1280x720@60            # a specific mode (plugview --list shows them)
 ```
 
 | Key | Action |
@@ -96,13 +97,18 @@ plugview -v 50           # start at 50 % volume
 | `F` / `⌃⌘F` | Toggle full screen |
 | `Esc` | Leave full screen |
 | `M` | Mute / unmute |
+| `S` | Save a screenshot to `~/Pictures/plugview` |
+| `⌘0` / `⌘+` / `⌘-` | Actual size (one video pixel per screen pixel) / bigger / smaller |
+| `⌥⌘T` | Keep the window on top of other apps |
 | `↑` `↓` | Volume ±10 % |
 | `⌘M` | Minimize |
 | `Q` / `⌘Q` | Quit |
 
 The video fills the window with no title bar. Move the mouse to show the window buttons and a controls bar
 (mute, volume, resolution, full screen, and the capture device when more than one is connected); they fade out
-when the mouse rests. Scroll over the bar to change the volume. Drag the video to move the window. Resize it by
+when the mouse rests. Scroll over the bar to change the volume. The camera button saves a screenshot. The resolution
+panel also has **Full-range colors**: turn it on if blacks look gray and colors washed out (some cards label their
+video's color range wrong); screenshots get the same fix. Drag the video to move the window. Resize it by
 dragging an edge; it keeps the video's aspect ratio and remembers its size and position.
 
 ### Menu bar
