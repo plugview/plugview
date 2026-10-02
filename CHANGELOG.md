@@ -6,6 +6,8 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-01
+
 ### Added
 
 - A menu bar icon (app launch only) that shows whether a card is waiting, ready, or playing, with a panel for the
@@ -96,6 +98,7 @@ First public release.
 - Capture runs at the highest scheduling priority and is marked latency-critical, which keeps App Nap
   and timer coalescing away from it.
 
-[Unreleased]: https://github.com/plugview/plugview/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/plugview/plugview/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/plugview/plugview/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/plugview/plugview/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/plugview/plugview/releases/tag/v0.1.0
