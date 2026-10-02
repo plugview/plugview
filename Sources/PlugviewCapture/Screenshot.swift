@@ -25,7 +25,7 @@ enum Screenshot {
         var image = CIImage(cvPixelBuffer: pixelBuffer)
         if expandsLimitedRange { image = image.applyingFilter("CIColorMatrix", parameters: colorMatrixParameters) }
         guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
-            let cgImage = context.createCGImage(image, from: image.extent, format: .RGBA8, colorSpace: colorSpace)
+            let cgImage = CIContext().createCGImage(image, from: image.extent, format: .RGBA8, colorSpace: colorSpace)
         else { throw SaveError.cannotRender }
 
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -53,7 +53,4 @@ enum Screenshot {
             "inputBiasVector": CIVector(x: bias, y: bias, z: bias, w: 0),
         ]
     }
-
-    // CIContext is documented as thread-safe; older SDKs do not mark it Sendable.
-    nonisolated(unsafe) private static let context = CIContext()
 }
