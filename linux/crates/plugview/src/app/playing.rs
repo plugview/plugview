@@ -119,7 +119,7 @@ impl App {
         let Some(playback) = &state.playback else { return };
         let id = &playback.device.info.unique_id;
         let video_modes: Vec<_> = devices::modes(&playback.device.gst).iter().map(|mode| mode.mode).collect();
-        let choice = state.options.mode.or_else(|| state.settings.mode_choices.get(id).and_then(|key| ModeChoice::from_key(key)));
+        let choice = state.mode_choice(id);
         let expands_limited_range = state.settings.expands_limited_range.get(id).copied().unwrap_or(false);
         let controls = &self.widgets.controls;
         controls.show_modes(&pickable_modes(&video_modes), Some(ModeChoice::from_mode(&playback.mode.mode)), choice, expands_limited_range);
@@ -221,17 +221,20 @@ impl App {
 
     // MARK: - Mode, color range, device
 
-    /// `None` is Automatic. Remembered per card; a pick in the window replaces `--mode`.
+    /// `None` is Automatic. An app launch remembers it per card; the command uses it until it quits, as `--mode`.
     pub(super) fn select_mode(self: &Rc<Self>, choice: Option<ModeChoice>) {
         let Some(device) = self.playing_device() else { return };
         {
             let mut state = self.state.borrow_mut();
-            match choice {
-                Some(choice) => state.settings.mode_choices.insert(device.unique_id.clone(), choice.key()),
-                None => state.settings.mode_choices.remove(&device.unique_id),
-            };
-            state.options.mode = None;
-            state.settings.save();
+            if state.launch_mode == super::LaunchMode::Command {
+                state.options.mode = choice;
+            } else {
+                match choice {
+                    Some(choice) => state.settings.mode_choices.insert(device.unique_id.clone(), choice.key()),
+                    None => state.settings.mode_choices.remove(&device.unique_id),
+                };
+                state.settings.save();
+            }
         }
         self.restart(device);
     }
@@ -335,9 +338,18 @@ impl App {
             (Key::_0 | Key::KP_0, true) => self.show_actual_size(),
             (Key::equal | Key::plus | Key::KP_Add, true) => self.zoom(ZOOM_STEP),
             (Key::minus | Key::KP_Subtract, true) => self.zoom(1.0 / ZOOM_STEP),
-            (Key::w | Key::W, true) | (Key::q | Key::Q, _) => window.close(),
+            // Closing waits for the key's release (`handle_key_release`): a window hidden while the key is down can get
+            // the key again when it is shown.
+            (Key::w | Key::W, true) | (Key::q | Key::Q, _) => self.chrome.borrow_mut().is_close_key_down = true,
             _ => return false,
         }
         true
+    }
+
+    pub(super) fn handle_key_release(&self, key: gtk::gdk::Key) {
+        use gtk::gdk::Key;
+        if matches!(key, Key::w | Key::W | Key::q | Key::Q) && std::mem::take(&mut self.chrome.borrow_mut().is_close_key_down) {
+            self.widgets.window.close();
+        }
     }
 }

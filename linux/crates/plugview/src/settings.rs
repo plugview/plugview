@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
     pub preferred_device_id: Option<String>,
@@ -15,6 +15,25 @@ pub struct Settings {
     /// Full-range colors, by device unique ID.
     pub expands_limited_range: BTreeMap<String, bool>,
     pub window_size: Option<(i32, i32)>,
+    /// App launch: a card plugged in while the window is closed opens it and plays.
+    pub opens_on_plug_in: bool,
+    /// App launch: closing the window keeps plugview in the tray (when the desktop shows tray icons).
+    pub keeps_running_in_tray: bool,
+    pub launches_at_login: bool,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            preferred_device_id: None,
+            mode_choices: BTreeMap::new(),
+            expands_limited_range: BTreeMap::new(),
+            window_size: None,
+            opens_on_plug_in: true,
+            keeps_running_in_tray: true,
+            launches_at_login: false,
+        }
+    }
 }
 
 impl Settings {

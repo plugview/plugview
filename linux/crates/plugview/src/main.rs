@@ -1,6 +1,7 @@
 //! plugview for Linux: the command (`--list`, `--measure`) and the player window (phase 6.7 latency spike).
 
 mod app;
+mod autostart;
 mod brand;
 mod devices;
 mod measure;
@@ -8,6 +9,7 @@ mod pipeline;
 mod settings;
 mod signal;
 mod sysfs;
+mod tray;
 mod ui;
 
 use std::process::ExitCode;
@@ -38,15 +40,16 @@ OPTIONS
       --version         Show the version.
 
 KEYS (in the window)
-  F, F11       Toggle full screen        Esc   Leave full screen
-  M            Mute / unmute             ↑ ↓   Volume up / down
-  Q, Ctrl+Q    Quit
+  F, F11       Toggle full screen        Esc     Leave full screen
+  M            Mute / unmute             ↑ ↓     Volume up / down
+  S            Save a screenshot         Ctrl+0  Actual size
+  Q, Ctrl+Q    Quit                      Ctrl+W  Close window
 
 Plug and play: start plugview before or after connecting the device;
 it attaches automatically and re-attaches if the cable is unplugged.";
 
 fn main() -> ExitCode {
-    let arguments: Vec<String> = std::env::args().skip(1).collect();
+    let (launch_mode, arguments) = launch_mode(std::env::args().skip(1).collect());
     let command = match plugview_core::parse_command(&arguments) {
         Ok(command) => command,
         Err(error) => {
@@ -66,8 +69,22 @@ fn main() -> ExitCode {
         }
         Command::ListDevices => with_gstreamer(list),
         Command::Measure(options) => with_gstreamer(|| measure_card(&options)),
-        Command::Run(options) => with_gstreamer(|| app::run(options)),
+        Command::Run(options) => with_gstreamer(|| app::run(options, launch_mode)),
     }
+}
+
+/// Removes the desktop entry's markers before `parse_command` (spec: "Launch mode"); without them plugview is the
+/// command.
+fn launch_mode(mut arguments: Vec<String>) -> (app::LaunchMode, Vec<String>) {
+    if arguments.first().map(String::as_str) != Some(app::APP_MARKER) {
+        return (app::LaunchMode::Command, arguments);
+    }
+    arguments.remove(0);
+    let starts_hidden = arguments.first().map(String::as_str) == Some(app::BACKGROUND_MARKER);
+    if starts_hidden {
+        arguments.remove(0);
+    }
+    (app::LaunchMode::App { starts_hidden }, arguments)
 }
 
 fn with_gstreamer(body: impl FnOnce() -> ExitCode) -> ExitCode {

@@ -57,6 +57,7 @@ mkdir -p "$out"
 cp "$binary" "$out/plugview"
 cp LICENSE "$out/LICENSE"
 cp linux/README.md "$out/README.md"
+cp linux/data/install.sh linux/data/app.plugview.plugview.desktop linux/data/app.plugview.plugview.svg "$out/"
 # No macOS extended attributes: GNU tar on Linux would warn about each one.
 COPYFILE_DISABLE=1 tar --no-xattrs --no-mac-metadata -czf "$DIST/plugview-linux-x86_64.tar.gz" -C "$WORK/linux-x86_64" "plugview-$VERSION"
 echo "$DIST/plugview-linux-x86_64.tar.gz"

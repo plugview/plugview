@@ -282,3 +282,76 @@ fn draw_triangle(context: &Context, brand: &Brand, bars_offset: Option<f64>) -> 
     context.set_line_join(gtk::cairo::LineJoin::Round);
     context.stroke()
 }
+
+/// The tray icon's triangle: none while waiting, outlined once a card has signal, filled while it plays (as the
+/// Mac's menu bar icon).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TrayTriangle {
+    None,
+    Outlined,
+    Filled,
+}
+
+/// The tray icon at `size`×`size` pixels in bone, as ARGB32 in network byte order (what `StatusNotifierItem` wants).
+///
+/// ponytail: one color for every panel; bone reads on the dark panels of GNOME, KDE and the Steam Deck. Use a
+/// themed symbolic icon if light panels need a dark mark.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code, reason = "only the Linux tray draws it"))]
+#[must_use]
+pub fn tray_icon_argb(size: i32, triangle: TrayTriangle) -> Vec<u8> {
+    let Ok(mut surface) = gtk::cairo::ImageSurface::create(gtk::cairo::Format::ARgb32, size, size) else { return Vec::new() };
+    if let Ok(context) = Context::new(&surface) {
+        let _ = draw_tray_mark(&context, f64::from(size), triangle);
+    }
+    surface.flush();
+    let stride = usize::try_from(surface.stride()).unwrap_or(0);
+    let width = usize::try_from(size).unwrap_or(0);
+    let Ok(data) = surface.data() else { return Vec::new() };
+    // Cairo stores native-endian 0xAARRGGBB words; StatusNotifierItem reads A, R, G, B bytes.
+    data.chunks(stride).flat_map(|row| row[..width * 4].as_chunks::<4>().0.iter().flat_map(|pixel| u32::from_ne_bytes(*pixel).to_be_bytes())).collect()
+}
+
+#[cfg_attr(not(target_os = "linux"), allow(dead_code, reason = "only the Linux tray draws it"))]
+fn draw_tray_mark(context: &Context, size: f64, triangle: TrayTriangle) -> Result<(), gtk::cairo::Error> {
+    let brand = brand();
+    // The port spans 50×30 of the kit's 64 units; a little margin keeps its stroke inside the icon.
+    let (box_x, box_y, box_width, box_height) = (5.0, 15.0, 54.0, 34.0);
+    let scale = size / box_width;
+    context.translate(0.0, (size - box_height * scale) / 2.0);
+    context.scale(scale, scale);
+    context.translate(-box_x, -box_y);
+    set_color(context, &brand.palette.bone);
+    context.set_line_join(gtk::cairo::LineJoin::Round);
+
+    context.set_line_width(4.2);
+    polygon(context, &brand.geometry.port);
+    context.stroke()?;
+
+    context.set_line_width(2.6);
+    polygon(context, &brand.geometry.triangle);
+    match triangle {
+        TrayTriangle::None => context.new_path(),
+        TrayTriangle::Outlined => context.stroke()?,
+        TrayTriangle::Filled => {
+            context.fill_preserve()?;
+            context.stroke()?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tray_icon_is_argb_in_network_order() {
+        let pixels = tray_icon_argb(22, TrayTriangle::Filled);
+        assert_eq!(pixels.len(), 22 * 22 * 4);
+        // The filled triangle's middle is opaque bone (#EDE8DD): A, R, G, B.
+        let middle = (11 * 22 + 11) * 4;
+        assert_eq!(&pixels[middle..middle + 4], &[0xFF, 0xED, 0xE8, 0xDD]);
+        // A corner stays transparent.
+        assert_eq!(pixels[0], 0);
+    }
+}

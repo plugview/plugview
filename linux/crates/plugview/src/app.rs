@@ -1,6 +1,7 @@
 //! The app: one window that shows the launcher until a card plays, then the video, driven by the shared launcher
 //! state machine (`next_launcher_state`) exactly as on the Mac.
 
+mod background;
 mod playing;
 mod signal_watch;
 
@@ -19,20 +20,40 @@ use crate::devices::{self, Device, Mode};
 use crate::pipeline::{self, AudioPipeline, FramePath, VideoPipeline, VideoSink};
 use crate::settings::Settings;
 use crate::signal::{self, FrameProbe};
+use crate::tray::Tray;
 use crate::ui::controls::{Controls, ControlsActions, Toasts};
 use crate::ui::fonts;
 use crate::ui::launcher::{self, ScreenContext};
 use signal_watch::SignalState;
 
+/// The desktop entry starts plugview with this first, so it runs as the app, not the command (spec: "Launch mode").
+pub const APP_MARKER: &str = "--app";
+/// With `APP_MARKER`, at login: start in the tray without a window.
+pub const BACKGROUND_MARKER: &str = "--background";
+
+/// How plugview was started.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LaunchMode {
+    /// From a terminal: the command, exactly as on the Mac; closing the window quits.
+    Command,
+    /// From the desktop: a single instance with a tray icon that remembers the user's choices.
+    App { starts_hidden: bool },
+}
+
 /// Opens the window and plays; the exit code the command returns.
-pub fn run(options: RunOptions) -> ExitCode {
+pub fn run(options: RunOptions, launch_mode: LaunchMode) -> ExitCode {
     if let Err(error) = gtk::init() {
         eprintln!("plugview: no display: {error}");
         return ExitCode::FAILURE;
     }
     fonts::register();
-    let app = adw::Application::builder().application_id("app.plugview.plugview").flags(gio::ApplicationFlags::NON_UNIQUE).build();
-    app.connect_activate(move |app| App::start(app, options.clone()));
+    // A second desktop launch activates the running app instead of opening the card twice.
+    let flags = if launch_mode == LaunchMode::Command { gio::ApplicationFlags::NON_UNIQUE } else { gio::ApplicationFlags::empty() };
+    let app = adw::Application::builder().application_id("app.plugview.plugview").flags(flags).build();
+    app.connect_activate(move |app| match background::current_app() {
+        Some(running) => running.open_window(),
+        None => App::start(app, options.clone(), launch_mode),
+    });
     // GTK must not read plugview's own options.
     if app.run_with_args(&["plugview"]) == glib::ExitCode::SUCCESS { ExitCode::SUCCESS } else { ExitCode::FAILURE }
 }
@@ -79,6 +100,8 @@ struct Chrome {
     is_bar_hovered: bool,
     /// The last pointer position, so a motion event without movement (widgets changing under it) wakes nothing.
     pointer: Option<(f64, f64)>,
+    /// Ctrl+W or Q is down; the window closes when it is released.
+    is_close_key_down: bool,
 }
 
 struct State {
@@ -95,6 +118,19 @@ struct State {
     device_monitor: Option<(gst::DeviceMonitor, gst::bus::BusWatchGuard)>,
     /// The cards that can play now, for the device menu.
     playable: Vec<plugview_core::DeviceInfo>,
+    launch_mode: LaunchMode,
+    tray: Option<Tray>,
+    idle_inhibit: Option<u32>,
+}
+
+impl State {
+    /// The mode to play a card in: the remembered one for an app launch; `--mode` or the best one for the command.
+    fn mode_choice(&self, unique_id: &str) -> Option<ModeChoice> {
+        match self.launch_mode {
+            LaunchMode::Command => self.options.mode,
+            LaunchMode::App { .. } => self.settings.mode_choices.get(unique_id).and_then(|key| ModeChoice::from_key(key)),
+        }
+    }
 }
 
 struct App {
@@ -105,7 +141,7 @@ struct App {
 }
 
 impl App {
-    fn start(application: &adw::Application, options: RunOptions) {
+    fn start(application: &adw::Application, options: RunOptions, launch_mode: LaunchMode) {
         // After libadwaita has started, which the application does on activation.
         load_css();
         let settings = Settings::load();
@@ -126,22 +162,36 @@ impl App {
                 is_refresh_pending: false,
                 device_monitor: None,
                 playable: Vec::new(),
+                launch_mode,
+                tray: None,
+                idle_inhibit: None,
             }),
             chrome: RefCell::new(Chrome::default()),
             signal: RefCell::new(SignalState::default()),
         });
         // Callbacks hold weak references; the application owns the app until it shuts down.
         let owner = Rc::clone(&app);
-        application.connect_shutdown(move |_| drop(owner.state.borrow_mut().playback.take()));
+        application.connect_shutdown(move |_| {
+            let mut state = owner.state.borrow_mut();
+            state.playback = None;
+            state.tray = None;
+            if let Some((monitor, _watch)) = state.device_monitor.take() {
+                monitor.stop();
+            }
+        });
         app.connect_window();
+        app.start_background();
         app.watch_devices();
         app.render();
-        app.widgets.window.present();
+        // At login plugview waits in the tray; without a tray there would be no way back to it, so it shows.
+        let starts_hidden = matches!(launch_mode, LaunchMode::App { starts_hidden: true }) && app.closes_to_tray();
+        if !starts_hidden {
+            app.widgets.window.present();
+            app.inhibit_idle();
+        }
         if starts_in_full_screen {
             app.widgets.window.fullscreen();
         }
-        // Keep the screen awake while the window is open (K32); a controller is not keyboard or mouse input.
-        application.inhibit(Some(&app.widgets.window), gtk::ApplicationInhibitFlags::IDLE, Some("Playing a capture card"));
         app.refresh_devices();
     }
 
@@ -151,6 +201,7 @@ impl App {
             state.launcher = next_launcher_state(&state.launcher, event);
         }
         self.render();
+        self.update_tray();
     }
 
     /// Shows the video while playing, otherwise the launcher screen for the state (crossfading between screens).
@@ -193,7 +244,8 @@ impl App {
         let state = self.state.borrow();
         let preferred = state.settings.preferred_device_id.clone();
         let devices = state.devices.clone();
-        let saved_modes = state.settings.mode_choices.clone();
+        let choices: std::collections::HashMap<String, Option<ModeChoice>> =
+            state.devices.iter().map(|device| (device.info.unique_id.clone(), state.mode_choice(&device.info.unique_id))).collect();
         let weak = Rc::downgrade(self);
         let is_auto_play_pending = match &state.launcher {
             LauncherState::Ready(ready) => ready.len() > 1 && should_auto_play(ready, preferred.as_deref()),
@@ -202,7 +254,7 @@ impl App {
         ScreenContext {
             details: Box::new(move |info| {
                 let Some(device) = devices.iter().find(|device| &device.info == info) else { return String::new() };
-                let choice = saved_modes.get(&info.unique_id).and_then(|key| ModeChoice::from_key(key));
+                let choice = choices.get(&info.unique_id).copied().flatten();
                 let modes = devices::modes(&device.gst);
                 let index = mode_index(&modes.iter().map(|mode| mode.mode).collect::<Vec<_>>(), choice);
                 index.and_then(|index| modes.get(index)).map(|mode| mode.mode.summary()).unwrap_or_default()
@@ -230,11 +282,11 @@ impl App {
             (state.options.video_query.clone(), state.settings.preferred_device_id.clone())
         };
         let playable = preferred_first(&playable_video_devices(&infos, query.as_deref()), preferred.as_deref());
-        {
+        let previous = {
             let mut state = self.state.borrow_mut();
             state.devices = videos;
-            state.playable.clone_from(&playable);
-        }
+            std::mem::replace(&mut state.playable, playable.clone())
+        };
 
         // The playing card went away: release it before the launcher shows what is left.
         let lost = self.state.borrow().playback.as_ref().is_some_and(|playback| !playable.contains(&playback.device.info));
@@ -245,6 +297,11 @@ impl App {
         }
         self.send(LauncherEvent::DevicesChanged(playable.clone()));
 
+        // A closed window (app in the tray) plays nothing; a new card may open it.
+        if !self.is_window_open() {
+            self.open_on_plug_in(&previous, &playable);
+            return;
+        }
         let state = self.state.borrow();
         let can_start = state.playback.is_none() && !state.is_starting && matches!(state.launcher, LauncherState::Ready(_));
         let first = playable.first().cloned();
@@ -284,8 +341,7 @@ impl App {
         let (choice, options, expands_limited_range) = {
             let state = self.state.borrow();
             let id = &device.info.unique_id;
-            let saved = state.settings.mode_choices.get(id).and_then(|key| ModeChoice::from_key(key));
-            (state.options.mode.or(saved), state.options.clone(), state.settings.expands_limited_range.get(id).copied().unwrap_or(false))
+            (state.mode_choice(id), state.options.clone(), state.settings.expands_limited_range.get(id).copied().unwrap_or(false))
         };
         let modes = devices::modes(&device.gst);
         let index = mode_index(&modes.iter().map(|mode| mode.mode).collect::<Vec<_>>(), choice).ok_or("reports no video formats")?;
@@ -388,19 +444,31 @@ impl App {
             let Some(app) = weak.upgrade() else { return glib::Propagation::Proceed };
             if app.handle_key(key, modifiers) { glib::Propagation::Stop } else { glib::Propagation::Proceed }
         });
+        let weak = Rc::downgrade(self);
+        keys.connect_key_released(move |_, key, _, _| {
+            if let Some(app) = weak.upgrade() {
+                app.handle_key_release(key);
+            }
+        });
         self.widgets.window.add_controller(keys);
         self.connect_chrome();
 
         let weak = Rc::downgrade(self);
         self.widgets.window.connect_close_request(move |window| {
-            if let Some(app) = weak.upgrade() {
+            let Some(app) = weak.upgrade() else { return glib::Propagation::Proceed };
+            {
                 let mut state = app.state.borrow_mut();
                 if !window.is_fullscreen() && !window.is_maximized() {
-                    state.settings.window_size = Some((window.width(), window.height()));
+                    state.settings.window_size = Some(window.default_size());
                 }
                 state.settings.save();
                 // Release the card now, so its light goes off with the window.
                 state.playback = None;
+            }
+            if app.closes_to_tray() {
+                window.unfullscreen();
+                app.hide_window();
+                return glib::Propagation::Stop;
             }
             glib::Propagation::Proceed
         });

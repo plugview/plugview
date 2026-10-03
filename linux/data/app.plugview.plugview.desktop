@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=plugview
+GenericName=Capture Card Viewer
+Comment=Plug in a capture card and play your console on this screen
+Exec=plugview --app
+Icon=app.plugview.plugview
+Terminal=false
+Categories=AudioVideo;Video;Player;
+Keywords=capture;card;hdmi;console;switch;playstation;xbox;steam deck;
+StartupNotify=true
+StartupWMClass=app.plugview.plugview
+SingleMainWindow=true
