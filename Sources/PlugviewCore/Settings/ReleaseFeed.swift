@@ -13,6 +13,10 @@ public enum ReleaseFeed {
     public struct Update: Sendable, Equatable {
         public let version: String
         public let downloadURL: URL
+        /// The download's SHA-256, lowercase hex; `nil` when the feed has none (then it can only be downloaded).
+        public let sha256: String?
+        /// The download's size in bytes, for progress and as an upper bound.
+        public let size: Int?
     }
 
     public enum FeedError: Error, Equatable {
@@ -34,7 +38,7 @@ public enum ReleaseFeed {
         guard let url = URL(string: artifact.url), url.scheme?.lowercased() == "https", url.host()?.lowercased() == host else {
             throw FeedError.untrustedURL(artifact.url)
         }
-        return Update(version: manifest.version, downloadURL: url)
+        return Update(version: manifest.version, downloadURL: url, sha256: checksum(artifact.sha256), size: artifact.size.flatMap { $0 > 0 ? $0 : nil })
     }
 
     /// The fields this build reads.
@@ -50,6 +54,14 @@ public enum ReleaseFeed {
             let platform: String
             let kind: String
             let url: String
+            let sha256: String?
+            let size: Int?
         }
+    }
+
+    /// A SHA-256 as 64 hexadecimal characters, lowercased; anything else is not trusted for installing.
+    static func checksum(_ text: String?) -> String? {
+        guard let text, text.count == 64, text.allSatisfy(\.isHexDigit) else { return nil }
+        return text.lowercased()
     }
 }

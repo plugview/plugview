@@ -11,10 +11,18 @@
         "releasedAt": "2026-10-03",
         "artifacts": [
           { "platform": "linux", "arch": "x86_64", "kind": "cli", "url": "https://plugview.app/releases/0.4.0/l.tar.gz", "sha256": "cd", "size": 1 },
-          { "platform": "macos", "arch": "universal", "kind": "app", "url": "https://plugview.app/releases/0.4.0/plugview-0.4.0-macos-universal-app.zip", "sha256": "ab", "size": 1 }
+          { "platform": "macos", "arch": "universal", "kind": "app", "url": "https://plugview.app/releases/0.4.0/plugview-0.4.0-macos-universal-app.zip", "sha256": "7A89FA553D2F6BC35A8DA3C87C82AD44CBD85895069E8CA822519DE976149731", "size": 1428223 }
         ]
       },
-      "expected": { "update": { "version": "0.4.0", "url": "https://plugview.app/releases/0.4.0/plugview-0.4.0-macos-universal-app.zip" } }
+      "expected": { "update": { "version": "0.4.0", "url": "https://plugview.app/releases/0.4.0/plugview-0.4.0-macos-universal-app.zip", "sha256": "7a89fa553d2f6bc35a8da3c87c82ad44cbd85895069e8ca822519de976149731", "size": 1428223 } }
+    },
+    {
+      "description": "a malformed checksum is dropped, so the update can only be downloaded, not installed",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0", "artifacts": [{ "platform": "macos", "arch": "universal", "kind": "app", "url": "https://plugview.app/x.zip", "sha256": "not-a-checksum", "size": -5 }] },
+      "expected": { "update": { "version": "0.4.0", "url": "https://plugview.app/x.zip", "sha256": null, "size": null } }
     },
     {
       "description": "unknown fields and platforms are ignored",

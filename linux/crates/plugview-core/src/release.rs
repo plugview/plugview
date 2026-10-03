@@ -11,6 +11,10 @@ const HOST: &str = "plugview.app";
 pub struct Update {
     pub version: String,
     pub download_url: String,
+    /// The download's SHA-256, lowercase hex; `None` when the feed has none (then it can only be downloaded).
+    pub sha256: Option<String>,
+    /// The download's size in bytes.
+    pub size: Option<u64>,
 }
 
 /// Why the release feed was not used.
@@ -35,6 +39,8 @@ struct Artifact {
     platform: String,
     kind: String,
     url: String,
+    sha256: Option<String>,
+    size: Option<i64>,
 }
 
 /// The release to offer: newer than `current_version` and with a `platform`/`kind` download, else `None`.
@@ -55,7 +61,17 @@ pub fn update_from_feed(feed: &[u8], current_version: &str, platform: &str, kind
     if !is_trusted(&artifact.url) {
         return Err(FeedError::UntrustedUrl(artifact.url.clone()));
     }
-    Ok(Some(Update { version: manifest.version, download_url: artifact.url.clone() }))
+    Ok(Some(Update {
+        version: manifest.version,
+        download_url: artifact.url.clone(),
+        sha256: checksum(artifact.sha256.as_deref()),
+        size: artifact.size.filter(|size| *size > 0).map(|size| size as u64),
+    }))
+}
+
+/// A SHA-256 as 64 hexadecimal characters, lowercased; anything else is not trusted for installing.
+fn checksum(text: Option<&str>) -> Option<String> {
+    text.filter(|text| text.len() == 64 && text.bytes().all(|byte| byte.is_ascii_hexdigit())).map(str::to_ascii_lowercase)
 }
 
 fn is_trusted(address: &str) -> bool {

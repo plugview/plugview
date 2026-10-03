@@ -6,7 +6,9 @@ namespace Plugview.Core.Release;
 /// <summary>A newer release with a download for this platform and kind.</summary>
 /// <param name="Version">The release's version.</param>
 /// <param name="DownloadUrl">Always an https URL on plugview.app.</param>
-public sealed record Update(string Version, Uri DownloadUrl);
+/// <param name="Sha256">The download's SHA-256, lowercase hex; <c>null</c> when the feed has none (then it can only be downloaded).</param>
+/// <param name="Size">The download's size in bytes.</param>
+public sealed record Update(string Version, Uri DownloadUrl, string? Sha256, long? Size);
 
 /// <summary>Why the release feed was not used.</summary>
 public abstract class FeedException : Exception
@@ -50,7 +52,9 @@ public static class ReleaseFeed
 
         var artifact = manifest.Artifacts.FirstOrDefault(artifact => artifact.Platform == platform && artifact.Kind == kind);
         if (artifact is null) return null;
-        return TrustedUrl(artifact.Url) is { } url ? new Update(manifest.Version, url) : throw new UntrustedUrlException(artifact.Url);
+        return TrustedUrl(artifact.Url) is { } url
+            ? new Update(manifest.Version, url, Checksum(artifact.Sha256), artifact.Size is > 0 ? artifact.Size : null)
+            : throw new UntrustedUrlException(artifact.Url);
     }
 
     private static Manifest Decode(ReadOnlySpan<byte> feed)
@@ -75,7 +79,11 @@ public static class ReleaseFeed
 
     internal sealed record Manifest(long SchemaVersion, string Version, IReadOnlyList<Artifact> Artifacts);
 
-    internal sealed record Artifact(string Platform, string Kind, string Url);
+    internal sealed record Artifact(string Platform, string Kind, string Url, string? Sha256 = null, long? Size = null);
+
+    /// <summary>A SHA-256 as 64 hexadecimal characters, lowercased; anything else is not trusted for installing.</summary>
+    private static string? Checksum(string? text) =>
+        text is { Length: 64 } && text.All(char.IsAsciiHexDigit) ? text.ToLowerInvariant() : null;
 }
 
 /// <summary>Source-generated JSON, so the feed reads without reflection under NativeAOT.</summary>

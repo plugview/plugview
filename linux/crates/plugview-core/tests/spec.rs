@@ -262,9 +262,12 @@ fn release_feed_matches_the_spec() {
         let expected = &case["expected"];
         match (result, expected.get("error").map(text)) {
             (Ok(update), None) => {
-                let expected_update = expected["update"]
-                    .as_object()
-                    .map(|update| Update { version: text(&update["version"]).to_owned(), download_url: text(&update["url"]).to_owned() });
+                let expected_update = expected["update"].as_object().map(|update| Update {
+                    version: text(&update["version"]).to_owned(),
+                    download_url: text(&update["url"]).to_owned(),
+                    sha256: update.get("sha256").and_then(|value| value.as_str()).map(str::to_owned),
+                    size: update.get("size").and_then(serde_json::Value::as_u64),
+                });
                 assert_eq!(update, expected_update, "{}", description(case));
             }
             (Err(FeedError::UnsupportedSchema(schema)), Some("unsupportedSchema")) => {

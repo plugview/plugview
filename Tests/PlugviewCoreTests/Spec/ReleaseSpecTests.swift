@@ -21,6 +21,8 @@ import Testing
     struct Update: Decodable, Equatable {
         let version: String
         let url: String
+        var sha256: String? = nil
+        var size: Int? = nil
     }
 
     struct Versions: Decodable {
@@ -43,7 +45,10 @@ import Testing
             do {
                 let update = try ReleaseFeed.update(from: feed, currentVersion: testCase.currentVersion, platform: testCase.platform, kind: testCase.kind)
                 #expect(testCase.expected.error == nil, "\(testCase.description): read, expected an error")
-                #expect(update.map { Update(version: $0.version, url: $0.downloadURL.absoluteString) } == testCase.expected.update, "\(testCase.description)")
+                #expect(
+                    update.map { Update(version: $0.version, url: $0.downloadURL.absoluteString, sha256: $0.sha256, size: $0.size) }
+                        == testCase.expected.update,
+                    "\(testCase.description)")
             } catch ReleaseFeed.FeedError.unsupportedSchema(let schemaVersion) {
                 #expect(testCase.expected.error == "unsupportedSchema" && testCase.expected.schemaVersion == schemaVersion, "\(testCase.description)")
             } catch ReleaseFeed.FeedError.untrustedURL(let url) {

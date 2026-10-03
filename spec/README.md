@@ -55,6 +55,8 @@ Three rules that standard libraries disagree on, so every port implements them i
   point. Most `parse` functions accept `+40` or ` 40`.
 - **Download URLs** must use the `https` scheme and the host `plugview.app`, both compared ignoring case; user info,
   subdomains and a trailing dot are other hosts.
+- **An update's checksum** is kept only when it is 64 hexadecimal characters (stored lowercase) and its size only
+  when positive; otherwise both are `null`, and the app offers the download instead of installing it.
 
 The brand's colors, mark geometry and animation keyframes are in `brand.json`, taken from the brand kit
 (`plugview-design/*.svg`, kept outside this repository); `easing.json` pins down how its curves are evaluated.

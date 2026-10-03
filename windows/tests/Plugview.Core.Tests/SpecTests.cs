@@ -196,6 +196,8 @@ public sealed class SpecTests
                 var expectedUpdate = expected["update"];
                 Assert.True(expectedUpdate?["version"].OptionalText() == update?.Version, description);
                 Assert.True(expectedUpdate?["url"].OptionalText() == update?.DownloadUrl.OriginalString, description);
+                Assert.True(expectedUpdate?["sha256"]?.GetValue<string>() == update?.Sha256, description);
+                Assert.True(expectedUpdate?["size"]?.GetValue<long>() == update?.Size, description);
             }
             catch (UnsupportedSchemaException error)
             {
