@@ -63,6 +63,25 @@ public final class CaptureSession: @unchecked Sendable {
         try await grabber.withNextFrame { frame in try Screenshot.save(frame, expandsLimitedRange: expandsLimitedRange) }
     }
 
+    /// One look at the signal for the signal watch: whether a frame arrives within a second, and how bright it is.
+    ///
+    /// Off the display path: the grabber's connection is enabled for this one frame.
+    public func sampleSignal() async -> SignalSample? {
+        await grabber.nextSignalSample()
+    }
+
+    /// The card audio's loudest channel right now, in dB (about -120 for digital silence); `nil` without card audio.
+    ///
+    /// Reads the connection's level meters, so no sample passes through plugview.
+    public func audioLevel() async -> Float? {
+        await withCheckedContinuation { continuation in
+            queue.async {
+                let levels = self.audioOutput.connections.flatMap(\.audioChannels).map(\.averagePowerLevel)
+                continuation.resume(returning: levels.max())
+            }
+        }
+    }
+
     /// The `CIColorMatrix` inputs that expand limited-range video, for the preview layer's filter.
     public static var limitedRangeExpansionParameters: [String: Any] { Screenshot.colorMatrixParameters }
 
@@ -98,6 +117,7 @@ public final class CaptureSession: @unchecked Sendable {
             grabber.disable()
         }
         let mode = try videoDevice.lockFormat(choice: choice)
+        grabber.setDecodesFrames(mode.encoding == .compressed)
         do {
             return (mode, try audioID.map { id in try attachAudio(deviceID: id, volume: volume) })
         } catch {
