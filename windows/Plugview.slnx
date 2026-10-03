@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Plugview.Core/Plugview.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Plugview.Core.Tests/Plugview.Core.Tests.csproj" />
+  </Folder>
+</Solution>

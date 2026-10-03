@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- plugview's decisions that need no capture hardware, ported from the macOS PlugviewCore. Platform-free (net10.0),
+       so its tests run anywhere; it must match the shared spec in spec/ at the repository root. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Plugview.Core</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+</Project>
