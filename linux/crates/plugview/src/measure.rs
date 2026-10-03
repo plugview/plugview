@@ -108,6 +108,7 @@ fn report(video: &Device, mode: &Mode, audio: Option<&Device>, samples: &Samples
     let path = match pipeline.path {
         FramePath::ZeroCopy => "zero-copy (dmabuf to GTK)",
         FramePath::Converted => "converted in system memory",
+        FramePath::Expanded => "converted, stretched to full range",
     };
     println!("Path     {path}");
 

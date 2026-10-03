@@ -151,6 +151,8 @@ button.device-row:hover {
   background: @pv_bone;
   min-width: 12px;
   min-height: 12px;
+  /* Adwaita pulls the slider out with negative margins sized for its own, bigger knob. */
+  margin: -4px;
   border-radius: 6px;
   box-shadow: none;
   border: none;

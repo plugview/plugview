@@ -30,6 +30,9 @@ pub enum FramePath {
     /// Frames in system memory through a converter: the fallback when the zero-copy caps do not negotiate (L18),
     /// and the path on other systems.
     Converted,
+    /// The converted path plus `videobalance` stretching video range to full range (Full-range colors). Touches every
+    /// frame, so only when the user turns it on.
+    Expanded,
 }
 
 /// What the video ends in: the GTK sink (playing) or a fake sink (measuring).
@@ -76,8 +79,11 @@ pub fn video(device: &Device, mode: &Mode, path: FramePath, sink_kind: VideoSink
         chain.push(make("jpegparse")?);
         chain.push(make(&decoder)?);
     }
-    if path == FramePath::Converted {
+    if path != FramePath::ZeroCopy {
         chain.push(make("videoconvert")?);
+    }
+    if path == FramePath::Expanded {
+        chain.push(range_expansion()?);
     }
 
     // Newest frame wins: one buffer at most, older ones dropped (K09).
@@ -99,6 +105,16 @@ pub fn video(device: &Device, mode: &Mode, path: FramePath, sink_kind: VideoSink
     pipeline.add_many(&chain)?;
     gst::Element::link_many(&chain)?;
     Ok(VideoPipeline { pipeline, sink, path, decoder: decoder_name })
+}
+
+/// `LimitedRangeExpansion` in YUV: videobalance maps luma to `16 + (y - 16) * contrast + brightness * 255` and chroma
+/// to `128 + (c - 128) * saturation`, so luma 16–235 and chroma 16–240 land on 0–255.
+fn range_expansion() -> Result<gst::Element, PipelineError> {
+    let balance = make("videobalance")?;
+    balance.set_property("contrast", plugview_core::LimitedRangeExpansion::SCALE);
+    balance.set_property("brightness", -16.0 / 255.0);
+    balance.set_property("saturation", 255.0 / 224.0);
+    Ok(balance)
 }
 
 /// The mode's caps; for the zero-copy path, the same format as dmabuf memory.
