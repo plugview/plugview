@@ -25,7 +25,7 @@ see or change. Everything between the driver and the compositor is tuned below.
 | Card input keeps the default buffer | Resizing it (12.4 → 4.3 ms) crashed plugview inside Core Audio when the card was unplugged while playing on macOS 27. | Card audio 4.3 → 12.3 ms, still ahead of the ~20 ms video |
 | `userInteractive` capture queue and `latencyCritical` activity | Keeps App Nap and timer coalescing away from capture. | Not measured separately |
 | Display sleep disabled while the window is open | A controller is not keyboard/mouse input. | — |
-| Screenshot output attached but disabled | Its connection is enabled for one frame only, so no frame is copied while you play and the session is never reconfigured. | App CPU 5.6–8.5 % (0.2.0) vs 6.5–6.7 % (with it), 10 s windows at 1080p60: no difference |
+| Screenshot and signal-watch output always connected | Its frames are dropped at once unless a screenshot or the signal watch asks for one. It is never switched on and off: enabling a connection reconfigures the running session, and macOS then resets the card to its default 20 fps. 0.3.0–0.4.0 did switch it, so a screenshot (and, in 0.4.0, the signal watch twice a second) left the card at 20 fps. | Switching: 60 → 20 fps, capture → app 17 → 55 ms. Always connected: 60 fps, 17.4 ms, about 0.2 % more CPU |
 | Full-range colors is opt-in | A Core Image filter on the preview layer, applied by the window server on the GPU. | Off by default; not measured |
 
 The buffer and scheduling changes apply to plugview's process only, and macOS undoes them when plugview exits.

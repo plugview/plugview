@@ -111,10 +111,9 @@ public final class CaptureSession: @unchecked Sendable {
         removeInputsAndOutputs()
 
         try addInput(for: videoDevice)
-        // Screenshots only; without it the session plays exactly as before.
+        // Screenshots and the signal watch; connected for the whole session (see FrameGrabber for why).
         if session.canAddOutput(grabber.output) {
             session.addOutput(grabber.output)
-            grabber.disable()
         }
         let mode = try videoDevice.lockFormat(choice: choice)
         grabber.setDecodesFrames(mode.encoding == .compressed)

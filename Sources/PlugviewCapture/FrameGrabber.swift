@@ -4,12 +4,12 @@ import PlugviewCore
 
 /// Takes single frames for screenshots and the signal watch without touching the display path.
 ///
-/// Its video data output sits in the session with its connection disabled, so no frame reaches this process while
-/// you play; a grab enables it for one frame and disables it again. Adding or removing an output would reconfigure
-/// the running session instead, which drops frames and can reset the card's frame rate.
+/// Its video data output stays connected for the whole session and its frames are dropped at once unless a grab is
+/// waiting. It must never be switched on and off: enabling a connection reconfigures the running session, and macOS
+/// then resets the card to its default frame rate (20 fps on MS2130 cards, capture to app 17 → 55 ms). Measured on a
+/// UGREEN 25773 at 1080p60: always connected costs about 0.2 % CPU and leaves frame pacing and latency unchanged.
 ///
-/// `@unchecked Sendable`: `waiters` and `grabCount` are only touched on `queue`; the output's connection is toggled
-/// on `queue` too.
+/// `@unchecked Sendable`: `waiters` and `grabCount` are only touched on `queue`.
 final class FrameGrabber: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
     /// What one grab got.
     enum Grab {
@@ -34,11 +34,6 @@ final class FrameGrabber: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate
         output.alwaysDiscardsLateVideoFrames = true
         output.setSampleBufferDelegate(self, queue: queue)
         setDecodesFrames(false)
-    }
-
-    /// Call after adding `output` to the session, inside the same configuration.
-    func disable() {
-        output.connection(with: .video)?.isEnabled = false
     }
 
     /// Keeps the device's own pixel format (no conversion set up for frames never asked for), unless the device
@@ -82,7 +77,7 @@ final class FrameGrabber: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate
     /// Calls `handler` once, on the grabber's queue, with the next frame or why there is none.
     private func grab(_ handler: @escaping @Sendable (Grab) -> Void) {
         queue.async {
-            guard let connection = self.output.connection(with: .video) else {
+            guard self.output.connection(with: .video) != nil else {
                 handler(.notPlaying)
                 return
             }
@@ -90,12 +85,13 @@ final class FrameGrabber: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate
             guard self.waiters.count == 1 else { return }
             self.grabCount += 1
             let grab = self.grabCount
-            connection.isEnabled = true
             self.queue.asyncAfter(deadline: .now() + 1) { if self.grabCount == grab { self.finish(with: .timedOut) } }
         }
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        // Most frames: nobody asked, drop it at once.
+        guard !waiters.isEmpty else { return }
         finish(with: CMSampleBufferGetImageBuffer(sampleBuffer).map(Grab.frame) ?? .undecodedFrame)
     }
 
@@ -104,7 +100,6 @@ final class FrameGrabber: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate
         let finished = waiters
         waiters = []
         grabCount += 1
-        output.connection(with: .video)?.isEnabled = false
         for waiter in finished { waiter(grab) }
     }
 
