@@ -11,5 +11,5 @@
   "signalHelpAfterAttempts": 3,
   "blackLumaMax": 24,
   "blackPictureSeconds": 3,
-  "silentAudioSeconds": 5
+  "silentAudioSeconds": 20
 }

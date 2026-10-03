@@ -23,9 +23,9 @@
     { "description": "a healthy picture and sound", "blackPictureSeconds": 0, "silentAudioSeconds": 0, "expected": [] },
     { "description": "a black moment in a game is not HDCP", "blackPictureSeconds": 2.9, "silentAudioSeconds": 2.9, "expected": [] },
     { "description": "black for 3 s points at HDCP", "blackPictureSeconds": 3, "silentAudioSeconds": 0, "expected": ["blackPicture"] },
-    { "description": "a black picture explains the silence, so only one hint", "blackPictureSeconds": 10, "silentAudioSeconds": 10, "expected": ["blackPicture"] },
-    { "description": "a quiet scene is not missing sound", "blackPictureSeconds": 0, "silentAudioSeconds": 4.9, "expected": [] },
-    { "description": "5 s of digital silence with a picture points at the console's audio output", "blackPictureSeconds": 0, "silentAudioSeconds": 5, "expected": ["noGameSound"] },
+    { "description": "a black picture explains the silence, so only one hint", "blackPictureSeconds": 30, "silentAudioSeconds": 30, "expected": ["blackPicture"] },
+    { "description": "a silent home menu is not missing sound", "blackPictureSeconds": 0, "silentAudioSeconds": 19.9, "expected": [] },
+    { "description": "20 s of digital silence since the start, with a picture, points at the console's audio output", "blackPictureSeconds": 0, "silentAudioSeconds": 20, "expected": ["noGameSound"] },
     { "description": "no card audio, no sound hint", "blackPictureSeconds": 0, "silentAudioSeconds": null, "expected": [] }
   ]
 }

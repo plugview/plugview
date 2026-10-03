@@ -31,5 +31,5 @@ impl Tuning {
     /// Seconds of black frames before the HDCP hint.
     pub const BLACK_PICTURE_SECONDS: f64 = 3.0;
     /// Seconds of digital silence, with a picture, before the console audio hint.
-    pub const SILENT_AUDIO_SECONDS: f64 = 5.0;
+    pub const SILENT_AUDIO_SECONDS: f64 = 20.0;
 }

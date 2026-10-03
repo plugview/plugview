@@ -139,9 +139,10 @@ While a card is open, each port ticks `signalWatch` a few times a second (`signa
   after `noSignalAfterSeconds` the window shows "No signal" over a black background, never a frozen frame, and
   reopens the card at once, then after each `reopenBackoffSeconds` wait. After `signalHelpAfterAttempts` it also
   shows the console checklist below. A frame resets the attempts.
-- **Black frames** (`isBlackFrame` on a sampled frame, off the display path) for `blackPictureSeconds` show the
-  black-picture help. **Digital silence** with a picture for `silentAudioSeconds` shows the sound help. Only one
-  hint shows at a time.
+- **Black frames since the start** (`isBlackFrame` on a sampled frame, off the display path, and no picture seen
+  yet) for `blackPictureSeconds` show the black-picture help. **Digital silence since the start** (no sound heard
+  yet) with a picture for `silentAudioSeconds` shows the sound help. A dark scene or a quiet menu after the picture
+  or the sound has appeared never counts, and each hint shows once per start. Only one hint shows at a time.
 - Sampling never touches the display path: at most one small frame every half second, measured with `--measure`.
 
 The text is the same on every platform (menu names are the consoles' own; check them on hardware before a release):

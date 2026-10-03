@@ -51,9 +51,13 @@ public enum Tuning {
     /// Brightest luma (0–255) a sampled frame may have and still count as black: video black is 16, plus card noise.
     public static let blackLumaMax = 24
 
-    /// Seconds of black frames before the window suggests turning HDCP off (PlayStation sends black when it is on).
+    /// Seconds of black frames since the start before the window suggests turning HDCP off.
+    ///
+    /// PlayStation sends black while HDCP is on. A dark scene after the picture has shown never counts.
     public static let blackPictureSeconds = 3.0
 
-    /// Seconds of digital silence, with a picture, before the window suggests stereo PCM output on the console.
-    public static let silentAudioSeconds = 5.0
+    /// Seconds of digital silence since the start, with a picture, before the window suggests stereo PCM output.
+    ///
+    /// The Switch's home menu plays no sound at all, so a short wait would point at a problem that is not there.
+    public static let silentAudioSeconds = 20.0
 }

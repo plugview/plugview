@@ -43,5 +43,5 @@ public static class Tuning
     public const double BlackPictureSeconds = 3;
 
     /// <summary>Seconds of digital silence, with a picture, before the console audio hint.</summary>
-    public const double SilentAudioSeconds = 5;
+    public const double SilentAudioSeconds = 20;
 }

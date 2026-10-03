@@ -105,7 +105,7 @@ needs `card-quirks.json` too.
 1. Set Settings › Sound › Audio Output › Audio Format (Priority) to Bitstream (Dolby). Play.
 2. Set it back to Linear PCM. Then plug the headset into the controller.
 
-Pass when: sound plays with Linear PCM. Record that Dolby and the headset give silence (phase 1.12 adds the help line).
+Pass when: sound plays with Linear PCM; with Dolby, a "No game sound" notice appears about 20 seconds after the start.
 
 **M14 Bluetooth (K27).** Needs: Bluetooth headphones.
 1. Connect them and run `plugview --measure`.
@@ -166,7 +166,7 @@ settings and listen for crackles.
 
 **W12 MS2109 sound channels (K25).** M12 on Windows: "left" only in the left ear, at normal pitch.
 
-**W13 Silence from the console (K26).** M13 on Windows; the sound help line appears after 5 seconds.
+**W13 Silence from the console (K26).** M13 on Windows; the sound help appears about 20 seconds after the start.
 
 **W14 Bluetooth (K27).** M14 on Windows.
 
