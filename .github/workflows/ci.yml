@@ -31,13 +31,21 @@ jobs:
         run: make dist
 
   linux-core:
-    name: Linux core (Rust)
+    name: Linux app (Rust)
     runs-on: ubuntu-latest
+    # GTK 4.16 or later: Ubuntu's runner image is older, Fedora is current.
+    container: fedora:latest
     defaults:
       run:
         working-directory: linux
     steps:
+      - name: GTK, libadwaita and GStreamer development files
+        working-directory: /
+        run: dnf install -y gcc git gtk4-devel libadwaita-devel gstreamer1-devel gstreamer1-plugins-base-devel
       - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - name: Format, lint, tests
         run: |
           cargo fmt --check
