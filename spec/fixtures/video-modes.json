@@ -36,6 +36,41 @@
       "expected": 1
     },
     {
+      "description": "a USB 2 card: a smooth compressed mode beats raw modes too slow to be smooth",
+      "modes": [
+        { "width": 1920, "height": 1080, "maxFrameRate": 5, "encoding": "native" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 30, "encoding": "compressed" },
+        { "width": 1280, "height": 720, "maxFrameRate": 60, "encoding": "compressed" },
+        { "width": 1280, "height": 720, "maxFrameRate": 10, "encoding": "native" }
+      ],
+      "expected": 2
+    },
+    {
+      "description": "a USB 2 card with nothing smooth: the faster mode at the largest size, even compressed",
+      "modes": [
+        { "width": 1920, "height": 1080, "maxFrameRate": 5, "encoding": "native" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 30, "encoding": "compressed" }
+      ],
+      "expected": 1
+    },
+    {
+      "description": "a USB 3 card offering the same mode raw and compressed plays it raw",
+      "modes": [
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "compressed" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "native" },
+        { "width": 3840, "height": 2160, "maxFrameRate": 30, "encoding": "compressed" }
+      ],
+      "expected": 1
+    },
+    {
+      "description": "59.94 fps is smooth",
+      "modes": [
+        { "width": 3840, "height": 2160, "maxFrameRate": 29.97, "encoding": "native" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 59.94, "encoding": "native" }
+      ],
+      "expected": 1
+    },
+    {
       "description": "no modes, no index",
       "modes": [],
       "expected": null
