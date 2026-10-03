@@ -1,0 +1,15 @@
+{
+  "detect": [
+    { "description": "MS2109 declaring 96 kHz mono", "vendorId": "534D", "productId": "2109", "declaredSampleRate": 96000, "declaredChannels": 1, "expected": "ms2109InterleavedStereo" },
+    { "description": "an MS2109 already read as 48 kHz stereo (a fixed driver) needs nothing", "vendorId": "534D", "productId": "2109", "declaredSampleRate": 48000, "declaredChannels": 2, "expected": null },
+    { "description": "another MacroSilicon chip (MS2130) is not touched", "vendorId": "345F", "productId": "2130", "declaredSampleRate": 96000, "declaredChannels": 1, "expected": null },
+    { "description": "another vendor with the same product ID is not touched", "vendorId": "1234", "productId": "2109", "declaredSampleRate": 96000, "declaredChannels": 1, "expected": null }
+  ],
+  "ms2109": [
+    {
+      "description": "pairs of declared-mono samples are right then left; an odd last sample waits for the next read",
+      "declaredMono": [100, -100, 200, -200, 7],
+      "expectedStereo": [-100, 100, -200, 200]
+    }
+  ]
+}

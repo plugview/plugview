@@ -25,6 +25,8 @@ its tests, runs every case and compares the result exactly, unless the file give
 | `tuning.json` | `Tuning` | Timings every port uses (controls fade-out, volume step, card-audio wait, update interval) |
 | `capture-tools.json` | `screenshotFileName`, `LimitedRangeExpansion` | Screenshot file names and the full-range color fix |
 | `easing.json` | `CubicBezier`, `Keyframes` | The brand animations' timing curves (CSS `cubic-bezier` semantics) |
+| `signal-watch.json` | `signalWatch`, `isBlackFrame`, `signalHints` | Reopening a card whose frames stopped; black-picture and no-sound hints |
+| `card-quirks.json` | `CardAudioQuirks` (Windows) | Cards whose audio is not what they declare, and how to read it |
 
 Conventions:
 
@@ -151,3 +153,17 @@ The text is the same on every platform (menu names are the consoles' own; check 
 - Xbox: Settings › General › Volume & audio output › HDMI audio › **Stereo uncompressed**.
 - Nintendo Switch 2: set TV sound to **Stereo**.
 - Unplug headphones from the controller or the console: game sound then goes back to HDMI.
+
+### Card audio
+
+- **Play it at once**, on the system's default output, and follow that output when it changes (headphones plugged
+  in). Never require "Listen to this device" or a monitoring setting. Shared mode only, never exclusive.
+- **Hold the delay.** The card's clock and the speakers' clock differ by up to a few hundred ppm, so a fixed buffer
+  slowly fills (sound lags the picture) or drains (crackles). Each port keeps the buffer at a small target with a
+  rate correction of at most 1000 ppm, drops to the target after a stall, and refills after an underrun. macOS
+  (`AVCaptureAudioPreviewOutput`) and PipeWire (adaptive resampling) do this themselves; Windows uses
+  `AudioDriftController`.
+- **Card quirks** (`card-quirks.json`) apply only where the system does not already fix them: the MS2109's
+  96 kHz mono is read as 48 kHz stereo on Windows; Linux 5.9+ fixes it in the kernel. Whether macOS needs it is
+  checked in the hardware test plan.
+- Never delay the video to match the audio by default.
