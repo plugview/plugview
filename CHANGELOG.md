@@ -6,8 +6,14 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-02
+
 ### Added
 
+- **plugview for Windows and Linux, as previews.** The same command (`--list`, `--measure`, and a window that plays
+  the card with its sound) on Windows 10 2004 or later and on Linux with GTK 4.16 or later. They are early: the
+  Windows download is not signed yet, so Windows shows a SmartScreen warning, and neither has the launcher, the
+  controls bar or the menu bar icon of the Mac app yet. Reports welcome.
 - When the picture stops while the card is still connected (a console changing resolution or waking up),
   plugview says **No signal** instead of showing a frozen frame and reconnects the card by itself; after a few
   tries it lists the console settings to check. A black picture from the start (PlayStation HDCP) or no sound from
@@ -131,7 +137,8 @@ First public release.
 - Capture runs at the highest scheduling priority and is marked latency-critical, which keeps App Nap
   and timer coalescing away from it.
 
-[Unreleased]: https://github.com/plugview/plugview/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/plugview/plugview/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/plugview/plugview/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/plugview/plugview/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/plugview/plugview/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/plugview/plugview/compare/v0.1.0...v0.2.0
