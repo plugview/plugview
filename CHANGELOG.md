@@ -8,6 +8,8 @@ All notable changes to plugview are listed here. The format follows
 
 ### Fixed
 
+- Hand gestures in a game (a thumbs-up, a peace sign) could set off macOS Reactions, confetti or balloons over
+  the picture. plugview now starts with reaction gestures off; you can still turn them on in Control Center.
 - `--mode` accepted malformed values such as `1920x1080@@60` or `+1920x1080@60`. `--mode` and
   `--volume` now take plain digits only.
 

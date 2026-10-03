@@ -24,6 +24,8 @@
 	<string>public.app-category.video</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
+	<key>NSCameraReactionEffectGesturesEnabledDefault</key>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>plugview shows the live video from your capture device.</string>
 	<key>NSHighResolutionCapable</key>
