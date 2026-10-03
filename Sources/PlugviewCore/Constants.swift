@@ -1,7 +1,7 @@
 /// Single source of truth for the released version.
 ///
 /// The release workflow refuses a tag that differs.
-public let plugviewVersion = "0.4.2"
+public let plugviewVersion = "0.4.3"
 
 /// Tuning values, each backed by a measurement on real hardware (see docs/PERFORMANCE.md).
 public enum Tuning {

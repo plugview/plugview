@@ -6,6 +6,21 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-10-03
+
+### Added
+
+- **The Linux preview is now the full app.** The launcher with the brand animations, the controls bar (volume,
+  screenshot, resolution with Full-range colors, device, full screen) that fades away while you play, screenshots
+  in Pictures/plugview, the No signal watch with the console checklists, and a tray icon on KDE, the Steam Deck's
+  desktop and GNOME with the AppIndicator extension: close the window to release the card, and plugview opens again
+  when a card is plugged in, or at login if you turn that on. `install.sh` in the download adds it to the app grid.
+  Started from a terminal, `plugview` is still the command.
+
+### Changed
+
+- Nothing changes on the Mac in this release; the version moves with the Linux and Windows previews.
+
 ## [0.4.2] - 2026-10-03
 
 ### Added
