@@ -129,6 +129,9 @@ fn mode_caps(mode: &Mode, is_dmabuf: bool) -> gst::Caps {
     caps
 }
 
+/// How often the `level` element reports, as often as the signal watch ticks.
+const LEVEL_INTERVAL_NS: u64 = 500_000_000;
+
 /// A built audio pipeline with its volume element.
 #[derive(Debug)]
 pub struct AudioPipeline {
@@ -138,7 +141,7 @@ pub struct AudioPipeline {
     pub sink: gst::Element,
 }
 
-/// `card source ! audioconvert ! audioresample ! volume ! sink` with 20 ms buffers.
+/// `card source ! audioconvert ! [level] ! audioresample ! volume ! sink` with 20 ms buffers.
 ///
 /// The pipeline runs on the card's clock and the sink slaves to it, so the speakers follow the card's rate instead of
 /// drifting away (K23); PipeWire resamples inside the graph.
@@ -157,7 +160,15 @@ pub fn audio(device: &Device, is_measuring: bool) -> Result<AudioPipeline, Pipel
     if is_measuring {
         sink.set_property("sync", false);
     }
-    let chain = [source, convert, resample, volume.clone(), sink.clone()];
+    let mut chain = vec![source, convert];
+    // The signal watch's sound meter, before the volume so muting is not silence. Optional: without it the
+    // no-game-sound hint stays off.
+    if !is_measuring && let Ok(level) = make("level") {
+        level.set_property("interval", LEVEL_INTERVAL_NS);
+        level.set_property("post-messages", true);
+        chain.push(level);
+    }
+    chain.extend([resample, volume.clone(), sink.clone()]);
     pipeline.add_many(&chain)?;
     gst::Element::link_many(&chain)?;
     Ok(AudioPipeline { pipeline, volume, sink })

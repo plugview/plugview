@@ -4,3 +4,4 @@ pub mod art;
 pub mod controls;
 pub mod fonts;
 pub mod launcher;
+pub mod notice;

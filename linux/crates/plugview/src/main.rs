@@ -6,6 +6,7 @@ mod devices;
 mod measure;
 mod pipeline;
 mod settings;
+mod signal;
 mod sysfs;
 mod ui;
 

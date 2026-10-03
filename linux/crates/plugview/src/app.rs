@@ -2,6 +2,7 @@
 //! state machine (`next_launcher_state`) exactly as on the Mac.
 
 mod playing;
+mod signal_watch;
 
 use std::cell::RefCell;
 use std::process::ExitCode;
@@ -17,9 +18,11 @@ use plugview_core::{
 use crate::devices::{self, Device, Mode};
 use crate::pipeline::{self, AudioPipeline, FramePath, VideoPipeline, VideoSink};
 use crate::settings::Settings;
+use crate::signal::{self, FrameProbe};
 use crate::ui::controls::{Controls, ControlsActions, Toasts};
 use crate::ui::fonts;
 use crate::ui::launcher::{self, ScreenContext};
+use signal_watch::SignalState;
 
 /// Opens the window and plays; the exit code the command returns.
 pub fn run(options: RunOptions) -> ExitCode {
@@ -40,7 +43,10 @@ struct Playback {
     mode: Mode,
     video: VideoPipeline,
     audio: Option<AudioPipeline>,
+    /// Frame times and brightness for the signal watch.
+    frames: FrameProbe,
     _bus_watch: gst::bus::BusWatchGuard,
+    _audio_bus_watch: Option<gst::bus::BusWatchGuard>,
 }
 
 impl Drop for Playback {
@@ -62,6 +68,8 @@ struct Widgets {
     toasts: Toasts,
     /// The window buttons, which fade with the controls while playing.
     window_buttons: gtk::Revealer,
+    /// The signal watch's notice over the video.
+    notice: gtk::Revealer,
 }
 
 /// Whether the controls show over the video, and when they go away.
@@ -93,6 +101,7 @@ struct App {
     widgets: Widgets,
     state: RefCell<State>,
     chrome: RefCell<Chrome>,
+    signal: RefCell<SignalState>,
 }
 
 impl App {
@@ -119,6 +128,7 @@ impl App {
                 playable: Vec::new(),
             }),
             chrome: RefCell::new(Chrome::default()),
+            signal: RefCell::new(SignalState::default()),
         });
         // Callbacks hold weak references; the application owns the app until it shuts down.
         let owner = Rc::clone(&app);
@@ -156,6 +166,7 @@ impl App {
             return;
         }
         self.show_launcher_chrome();
+        self.stop_signal_watch();
         self.widgets.pages.set_visible_child_name("launcher");
         let id = launcher::screen_id(&launcher_state);
         let screen = launcher::screen(&launcher_state, &self.screen_context());
@@ -255,9 +266,11 @@ impl App {
                 println!("Showing {} · {}, {audio_summary}", device.info.name, playback.mode.mode.summary());
                 self.widgets.window.set_title(Some(&format!("{} · {}", device.info.name, playback.mode.mode.summary())));
                 let aspect_ratio = playback.mode.mode.width as f64 / playback.mode.mode.height.max(1) as f64;
+                let has_audio = playback.audio.is_some();
                 self.state.borrow_mut().playback = Some(playback);
                 self.fit_window_height(aspect_ratio);
-                self.send(LauncherEvent::PlaybackStarted(device.info));
+                self.send(LauncherEvent::PlaybackStarted(device.info.clone()));
+                self.did_start_signal_watch(&device.info.name, has_audio);
                 self.show_controls();
             }
             Err(reason) => {
@@ -291,11 +304,14 @@ impl App {
         if let Some(audio) = &audio {
             let _ = audio.pipeline.set_state(gst::State::Playing);
         }
+        let frames = FrameProbe::new(&video.sink).ok_or("has no video sink pad")?;
         let bus_watch = self.watch_pipeline(&video.pipeline, &device.info.name)?;
-        Ok(Playback { device: device.clone(), mode, video, audio, _bus_watch: bus_watch })
+        let audio_bus_watch = audio.as_ref().and_then(|audio| self.watch_sound_level(&audio.pipeline));
+        Ok(Playback { device: device.clone(), mode, video, audio, frames, _bus_watch: bus_watch, _audio_bus_watch: audio_bus_watch })
     }
 
-    /// A pipeline error (the card unplugged mid-frame, a negotiation failure) stops playback and says why.
+    /// A pipeline error stops playback. Before the first frame it says why (the card cannot start); after it, the
+    /// signal watch reopens the card in place, and the device monitor ends playback if the card was unplugged.
     fn watch_pipeline(self: &Rc<Self>, pipeline: &gst::Pipeline, name: &str) -> Result<gst::bus::BusWatchGuard, String> {
         let bus = pipeline.bus().ok_or("has no message bus")?;
         let weak = Rc::downgrade(self);
@@ -306,11 +322,27 @@ impl App {
             {
                 eprintln!("plugview: {}", error.error());
                 app.state.borrow_mut().playback = None;
-                app.send(LauncherEvent::PlaybackFailed(CaptureFailure { device_name: name.clone(), reason: error.error().to_string() }));
+                if !app.has_had_frame() {
+                    app.send(LauncherEvent::PlaybackFailed(CaptureFailure { device_name: name.clone(), reason: error.error().to_string() }));
+                }
             }
             glib::ControlFlow::Continue
         })
         .map_err(|error| error.to_string())
+    }
+
+    /// Feeds the card audio's level meter to the signal watch.
+    fn watch_sound_level(self: &Rc<Self>, pipeline: &gst::Pipeline) -> Option<gst::bus::BusWatchGuard> {
+        let weak = Rc::downgrade(self);
+        let watch = pipeline.bus()?.add_watch_local(move |_, message| {
+            if let (Some(app), Some(level)) = (weak.upgrade(), signal::level_rms_db(message))
+                && level > signal::SOUND_LEVEL_DB
+            {
+                app.signal.borrow_mut().has_heard_sound = true;
+            }
+            glib::ControlFlow::Continue
+        });
+        watch.ok()
     }
 
     /// Hot-plug: GStreamer's device monitor reports cards coming and going; a burst of changes refreshes once.
@@ -435,10 +467,12 @@ fn build_window(application: &adw::Application, settings: &Settings, actions: Co
         .reveal_child(true)
         .child(&buttons)
         .build();
+    let notice = gtk::Revealer::builder().transition_type(gtk::RevealerTransitionType::Crossfade).transition_duration(250).can_target(false).build();
     let controls = Controls::new(actions);
     let toasts = Toasts::new();
     let overlay = gtk::Overlay::new();
     overlay.set_child(Some(&pages));
+    overlay.add_overlay(&notice);
     overlay.add_overlay(&window_buttons);
     overlay.add_overlay(&controls.revealer);
     overlay.add_overlay(&toasts.revealer);
@@ -446,7 +480,7 @@ fn build_window(application: &adw::Application, settings: &Settings, actions: Co
     let handle = gtk::WindowHandle::new();
     handle.set_child(Some(&overlay));
     window.set_child(Some(&handle));
-    Widgets { window, pages, launcher, picture, controls, toasts, window_buttons }
+    Widgets { window, pages, launcher, picture, controls, toasts, window_buttons, notice }
 }
 
 fn load_css() {
