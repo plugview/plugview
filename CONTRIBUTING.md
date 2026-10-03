@@ -23,6 +23,16 @@ swift run plugview --list
 | `make install` | Installs to `~/.local/bin` (`PREFIX=/usr/local` with `sudo` for all users) |
 | `make dist` | Universal release archive and its SHA-256 in `.build/dist` |
 
+### Windows and Linux
+
+The Windows and Linux apps are being built in `windows/` (C# / .NET 10) and `linux/` (Rust). Their cores are
+platform-free and run the shared fixtures, so they build and test on any OS:
+
+```sh
+cd linux && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
+cd windows && dotnet format Plugview.slnx --verify-no-changes && dotnet test --solution Plugview.slnx
+```
+
 ## Project layout
 
 ```
@@ -44,7 +54,10 @@ Sources/
     Resources/Info.plist    Embedded in the binary; holds the camera/microphone prompt texts
 Tests/PlugviewCoreTests/  Swift Testing suites for PlugviewCore
   Spec/                     Runs the shared fixtures in spec/fixtures
-spec/                     Behavior every platform must match: rules (README.md) and JSON test fixtures
+spec/                     Behavior every platform must match: rules (README.md), JSON test fixtures, known field
+                          issues and the hardware test plan
+windows/                  Windows app (C#): Plugview.Core and its tests so far
+linux/                    Linux app (Rust): plugview-core and its tests so far
 docs/                     Performance notes and measurements
 ```
 

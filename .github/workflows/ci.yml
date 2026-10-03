@@ -29,3 +29,34 @@ jobs:
         run: make check
       - name: Universal release build
         run: make dist
+
+  linux-core:
+    name: Linux core (Rust)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: linux
+    steps:
+      - uses: actions/checkout@v7
+      - name: Format, lint, tests
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test
+
+  windows-core:
+    name: Windows core (.NET)
+    # The core is platform-free; the Windows app itself will build on windows-latest.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: windows
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: windows/global.json
+      - name: Format, build, tests
+        run: |
+          dotnet format Plugview.slnx --verify-no-changes
+          dotnet test --solution Plugview.slnx
