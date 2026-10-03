@@ -14,6 +14,11 @@ public enum Tuning {
     /// The card input keeps the default (see `requestLowLatencyAudioBuffers`).
     public static let audioBufferFrames: UInt32 = 128
 
+    /// Longest wait for a card's audio input after its video appears, so playback starts once, with sound.
+    ///
+    /// A replugged UGREEN 25773 adds its audio input 488 ms after its video; the wait ends as soon as it appears.
+    public static let cardAudioWaitSeconds = 1.0
+
     /// Volume change per arrow-key press, in percent.
     public static let volumeStepPercent = 10
 

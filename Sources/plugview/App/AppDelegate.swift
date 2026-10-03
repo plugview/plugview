@@ -198,6 +198,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard autoPlayTask == nil else { return }
         autoPlayTask = Task { [weak self] in
             guard let self, case .ready(let devices) = self.launcher.state, let first = devices.first else { return }
+            // Cleared first, or play() would cancel this very task and with it the wait for the card's sound.
+            self.autoPlayTask = nil
             await self.play(first, isUserChoice: false)
         }
     }
@@ -224,10 +226,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func attach(_ video: DeviceInfo) async {
-        let audio = selectAudio(for: video)
-
         isAttaching = true
         defer { isAttaching = false }
+        let audio = await selectAudio(for: video)
         var isFreshStart = true
         if case .playing = launcher.state { isFreshStart = false }
         do {
@@ -259,14 +260,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         await attach(video)
     }
 
-    private func selectAudio(for video: DeviceInfo) -> DeviceInfo? {
+    /// The card's audio input, waiting up to `Tuning.cardAudioWaitSeconds` for it to appear.
+    ///
+    /// A replugged card shows up as video first and audio a moment later; waiting starts it once, with sound,
+    /// instead of silent and then restarted by `attachLateAudio`.
+    /// ponytail: a card with no audio at all waits the full time on every start; skip the wait per card if one does.
+    private func selectAudio(for video: DeviceInfo) async -> DeviceInfo? {
         guard options.isAudioEnabled, isAudioPermitted else { return nil }
 
-        let audio = selectAudioDevice(from: DeviceCatalog.audioDevices(), for: video, matching: options.audioQuery)
-        if audio == nil {
-            printError("no audio input matched \(video.name); playing without sound. Run 'plugview --list' and pass '--audio <name>'.")
-        }
-        return audio
+        let deadline = ContinuousClock.now + .seconds(Tuning.cardAudioWaitSeconds)
+        repeat {
+            if let audio = selectAudioDevice(from: DeviceCatalog.audioDevices(), for: video, matching: options.audioQuery) { return audio }
+            do {
+                try await Task.sleep(for: .milliseconds(50))
+            } catch {
+                return nil
+            }
+        } while ContinuousClock.now < deadline
+        printError("no audio input matched \(video.name); playing without sound. Run 'plugview --list' and pass '--audio <name>'.")
+        return nil
     }
 
     func detach(reason: String) {

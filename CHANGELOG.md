@@ -10,6 +10,8 @@ All notable changes to plugview are listed here. The format follows
 
 - A card found by the app plays right away instead of after the 2.8 s plug-in intro (the picture is up in
   about 0.2 s). The intro now plays in a small banner over the live picture.
+- A replugged card starts once, with sound, instead of silent and then restarted: plugview waits up to a
+  second for the card's audio input, which appears about half a second after its video.
 
 ### Fixed
 
