@@ -97,6 +97,30 @@
       "expected": { "error": "untrustedURL", "url": "https://plugview.app@evil.example/x.zip" }
     },
     {
+      "description": "scheme and host compare ignoring case",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0", "artifacts": [{ "platform": "macos", "arch": "universal", "kind": "app", "url": "HTTPS://PLUGVIEW.APP/releases/0.4.0/x.zip" }] },
+      "expected": { "update": { "version": "0.4.0", "url": "HTTPS://PLUGVIEW.APP/releases/0.4.0/x.zip" } }
+    },
+    {
+      "description": "rejects a host with a trailing dot",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0", "artifacts": [{ "platform": "macos", "arch": "universal", "kind": "app", "url": "https://plugview.app./x.zip" }] },
+      "expected": { "error": "untrustedURL", "url": "https://plugview.app./x.zip" }
+    },
+    {
+      "description": "rejects a subdomain",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0", "artifacts": [{ "platform": "macos", "arch": "universal", "kind": "app", "url": "https://cdn.plugview.app/x.zip" }] },
+      "expected": { "error": "untrustedURL", "url": "https://cdn.plugview.app/x.zip" }
+    },
+    {
       "description": "rejects an unknown schema",
       "currentVersion": "0.3.0",
       "platform": "macos",

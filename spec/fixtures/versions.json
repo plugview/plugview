@@ -13,6 +13,11 @@
     { "candidate": "v1.0.0-beta", "current": "0.2.0" },
     { "candidate": "", "current": "0.2.0" },
     { "candidate": "v", "current": "0.2.0" },
-    { "candidate": "1.0.0", "current": "garbage" }
+    { "candidate": "1.0.0", "current": "garbage" },
+    { "candidate": "v+1.0", "current": "0.2.0" },
+    { "candidate": "1..0", "current": "0.2.0" },
+    { "candidate": "1.0.", "current": "0.2.0" },
+    { "candidate": "V1.0", "current": "0.2.0" },
+    { "candidate": " 1.0", "current": "0.2.0" }
   ]
 }

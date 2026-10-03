@@ -67,7 +67,7 @@ private func requireValue(for option: String, from remaining: inout ArraySlice<S
 
 private func requireVolumePercent(for option: String, from remaining: inout ArraySlice<String>) throws(OptionsError) -> Int {
     let value = try requireValue(for: option, from: &remaining)
-    guard let percent = Int(value), (0...100).contains(percent) else {
+    guard let percent = wholeNumber(value), percent <= 100 else {
         throw OptionsError(description: "\(option) must be a whole number from 0 to 100, got '\(value)'")
     }
     return percent

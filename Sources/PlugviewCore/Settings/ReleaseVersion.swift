@@ -10,7 +10,7 @@ public func isVersion(_ candidate: String, newerThan current: String) -> Bool {
 
 private func versionParts(_ version: String) -> [Int]? {
     let trimmed = version.hasPrefix("v") ? version.dropFirst() : Substring(version)
-    let parts = trimmed.split(separator: ".", omittingEmptySubsequences: false).map { Int($0) }
-    guard !parts.isEmpty, parts.allSatisfy({ ($0 ?? -1) >= 0 }) else { return nil }
+    let parts = trimmed.split(separator: ".", omittingEmptySubsequences: false).map(wholeNumber)
+    guard parts.allSatisfy({ $0 != nil }) else { return nil }
     return parts.compactMap { $0 }
 }

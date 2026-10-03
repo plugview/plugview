@@ -57,12 +57,12 @@ public struct ModeChoice: Equatable, Hashable, Sendable {
         self.init(width: mode.width, height: mode.height, frameRate: Int(mode.maxFrameRate.rounded()))
     }
 
-    /// Reads a saved choice; `nil` for anything that is not `<width>x<height>@<fps>` with positive numbers.
+    /// Reads a saved choice; `nil` for anything that is not `<width>x<height>@<fps>` with positive whole numbers.
     public init?(key: String) {
-        let sizeAndRate = key.split(separator: "@")
+        let sizeAndRate = key.split(separator: "@", omittingEmptySubsequences: false)
         guard sizeAndRate.count == 2 else { return nil }
-        let size = sizeAndRate[0].split(separator: "x")
-        guard size.count == 2, let width = Int(size[0]), let height = Int(size[1]), let frameRate = Int(sizeAndRate[1]),
+        let size = sizeAndRate[0].split(separator: "x", omittingEmptySubsequences: false)
+        guard size.count == 2, let width = wholeNumber(size[0]), let height = wholeNumber(size[1]), let frameRate = wholeNumber(sizeAndRate[1]),
             width > 0, height > 0, frameRate > 0
         else { return nil }
         self.init(width: width, height: height, frameRate: frameRate)

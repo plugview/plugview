@@ -37,6 +37,15 @@ Conventions:
 - Name matching ignores case (`"VIRTUAL"` matches `Streaming Virtual Camera`); unique IDs match exactly.
 - Numbers are the values shown to people: frame rates in a mode key are rounded, so 59.94 fps is `@60`.
 
+Three rules that standard libraries disagree on, so every port implements them itself:
+
+- **Rounding is half away from zero** (Swift `rounded()`, Rust `f64::round`). C#'s `Math.Round` rounds halves to
+  even by default; pass `MidpointRounding.AwayFromZero`.
+- **Typed numbers are ASCII digits only** (`--volume`, `--mode`, version parts): no sign, no spaces, no decimal
+  point. Most `parse` functions accept `+40` or ` 40`.
+- **Download URLs** must use the `https` scheme and the host `plugview.app`, both compared ignoring case; user info,
+  subdomains and a trailing dot are other hosts.
+
 The brand's geometry, colors and animation keyframes are not copied here. Their source is the brand kit
 (`plugview-design/*.svg`, kept outside this repository); `easing.json` pins down how its curves are evaluated.
 

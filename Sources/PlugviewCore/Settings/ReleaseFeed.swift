@@ -30,7 +30,10 @@ public enum ReleaseFeed {
             let artifact = manifest.artifacts.first(where: { $0.platform == platform && $0.kind == kind })
         else { return nil }
 
-        guard let url = URL(string: artifact.url), url.scheme == "https", url.host() == host else { throw FeedError.untrustedURL(artifact.url) }
+        // Schemes and host names are case-insensitive, so `HTTPS://PLUGVIEW.APP/…` is the same place.
+        guard let url = URL(string: artifact.url), url.scheme?.lowercased() == "https", url.host()?.lowercased() == host else {
+            throw FeedError.untrustedURL(artifact.url)
+        }
         return Update(version: manifest.version, downloadURL: url)
     }
 
