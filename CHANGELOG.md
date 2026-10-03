@@ -6,6 +6,14 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-03
+
+### Fixed
+
+- Playing felt slow and choppy in 0.4.0: the new signal watch made macOS drop the capture card to 20 fps, which
+  tripled the delay (capture to app 17 → 55 ms on a UGREEN 25773). The same happened after taking a screenshot
+  since 0.3.0. The card now stays at its full frame rate.
+
 ## [0.4.0] - 2026-10-02
 
 ### Added
@@ -137,7 +145,8 @@ First public release.
 - Capture runs at the highest scheduling priority and is marked latency-critical, which keeps App Nap
   and timer coalescing away from it.
 
-[Unreleased]: https://github.com/plugview/plugview/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/plugview/plugview/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/plugview/plugview/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/plugview/plugview/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/plugview/plugview/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/plugview/plugview/compare/v0.2.0...v0.3.0
