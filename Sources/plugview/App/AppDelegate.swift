@@ -336,7 +336,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             center.addObserver(forName: AVCaptureSession.runtimeErrorNotification, object: capture.session, queue: .main) { [weak self] notification in
                 let message = (notification.userInfo?[AVCaptureSessionErrorKey] as? NSError)?.localizedDescription ?? "unknown error"
                 MainActor.assumeIsolated {
-                    guard let self else { return }
+                    // An unplugged card's session reports errors after it was already detached; nothing to restart.
+                    guard let self, !self.attachedDeviceIDs.isEmpty else { return }
                     printError("capture stopped: \(message). Restarting…")
                     self.detach(reason: "Capture stopped. Restarting…")
                     Task { await self.attachIfPossible() }
