@@ -95,10 +95,12 @@ PREVIEW_FILES=""
 while read -r platform arch kind extension minimum; do
   built="$DIST/plugview-$platform-$arch.$extension"
   [[ -f "$built" ]] || continue
+  # The listing is read whole first: piping it into grep -q fails under pipefail when grep stops early.
   case "$extension" in
-    zip) unzip -l "$built" | grep -q "plugview-$VERSION/plugview.exe" || fail "$built is not a $VERSION build" ;;
-    tar.gz) tar -tzf "$built" | grep -q "plugview-$VERSION/plugview$" || fail "$built is not a $VERSION build" ;;
+    zip) listing="$(unzip -l "$built")" && expected="plugview-$VERSION/plugview.exe" ;;
+    tar.gz) listing="$(tar -tzf "$built")" && expected="plugview-$VERSION/plugview" ;;
   esac
+  grep -qx ".* *$expected" <<<"$listing" || grep -qx "$expected" <<<"$listing" || fail "$built is not a $VERSION build"
   file="plugview-$VERSION-$platform-$arch.$extension"
   cp "$built" "$STAGE/$file"
   PREVIEW_FILES="$PREVIEW_FILES $platform:$arch:$kind:$file:$minimum"
