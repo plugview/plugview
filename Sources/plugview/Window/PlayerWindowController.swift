@@ -281,12 +281,14 @@ private final class PlayerView: NSView {
 
     /// Fades the launcher out to uncover the video (then hides it, so it takes no clicks), or back in.
     func setLauncherVisible(_ isVisible: Bool) {
-        guard isVisible == launcherView.isHidden else { return }
         if isVisible {
+            // Also undoes a fade-out still running (the card unplugged right after it started playing): its
+            // completion then sees alpha 1 and leaves the launcher up, instead of hiding it over a black window.
             launcherView.alphaValue = 1
             launcherView.isHidden = false
             return
         }
+        guard !launcherView.isHidden else { return }
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.35
             context.timingFunction = CAMediaTimingFunction(name: .easeIn)

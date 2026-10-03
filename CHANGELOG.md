@@ -10,6 +10,7 @@ All notable changes to plugview are listed here. The format follows
 
 - Unplugging the card while it played could crash plugview on macOS 27. The card's audio input now keeps the
   macOS default buffer; playback keeps the short one.
+- After unplugging the card, the window could stay black instead of showing the start screen again.
 
 ## [0.3.0] - 2026-10-01
 
