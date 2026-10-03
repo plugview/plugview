@@ -25,8 +25,8 @@ swift run plugview --list
 
 ### Windows and Linux
 
-The Windows and Linux apps are being built in `windows/` (C# / .NET 10) and `linux/` (Rust). Their cores are
-platform-free and run the shared fixtures, so they build and test on any OS:
+The Windows and Linux apps are being built in `windows/` (C# / .NET 10) and `linux/` (Rust). Both build and test
+on any OS; the Linux app needs GTK 4.16+, libadwaita and GStreamer development files (see `linux/README.md`):
 
 ```sh
 cd linux && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
@@ -56,8 +56,8 @@ Tests/PlugviewCoreTests/  Swift Testing suites for PlugviewCore
   Spec/                     Runs the shared fixtures in spec/fixtures
 spec/                     Behavior every platform must match: rules (README.md), JSON test fixtures, known field
                           issues and the hardware test plan
-windows/                  Windows app (C#): Plugview.Core and its tests so far
-linux/                    Linux app (Rust): plugview-core and its tests so far
+windows/                  Windows app (C#): core, capture/display/audio layer, plugview.exe (see windows/README.md)
+linux/                    Linux app (Rust): core and the GTK/GStreamer app (see linux/README.md)
 docs/                     Performance notes and measurements
 ```
 
