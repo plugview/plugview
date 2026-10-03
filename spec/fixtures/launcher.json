@@ -1,0 +1,103 @@
+{
+  "devices": {
+    "card": { "uniqueID": "card", "name": "USB3.0 Video", "modelID": "UVC 345F:2130", "transport": "usb" },
+    "secondCard": { "uniqueID": "card-2", "name": "Cam Link 4K", "modelID": "", "transport": "usb" }
+  },
+  "failure": { "deviceName": "USB3.0 Video", "reason": "is another app using it?" },
+  "transitions": [
+    {
+      "description": "device changes do not leave the permission screen",
+      "from": { "state": "permissionNeeded", "permission": "camera" },
+      "event": { "event": "devicesChanged", "devices": ["card"] },
+      "expected": { "state": "permissionNeeded", "permission": "camera" }
+    },
+    {
+      "description": "device changes do not leave the denied screen",
+      "from": { "state": "permissionDenied", "permission": "camera" },
+      "event": { "event": "devicesChanged", "devices": ["card"] },
+      "expected": { "state": "permissionDenied", "permission": "camera" }
+    },
+    {
+      "description": "a permission request shows its kind",
+      "from": { "state": "permissionNeeded", "permission": "camera" },
+      "event": { "event": "permissionRequested", "permission": "microphone" },
+      "expected": { "state": "permissionNeeded", "permission": "microphone" }
+    },
+    {
+      "description": "a refusal shows the denied screen for its kind",
+      "from": { "state": "permissionNeeded", "permission": "camera" },
+      "event": { "event": "permissionDenied", "permission": "camera" },
+      "expected": { "state": "permissionDenied", "permission": "camera" }
+    },
+    {
+      "description": "keeps playing while the playing device is still connected",
+      "from": { "state": "playing", "device": "card" },
+      "event": { "event": "devicesChanged", "devices": ["secondCard", "card"] },
+      "expected": { "state": "playing", "device": "card" }
+    },
+    {
+      "description": "waits when the playing device and every other one disappear",
+      "from": { "state": "playing", "device": "card" },
+      "event": { "event": "devicesChanged", "devices": [] },
+      "expected": { "state": "waitingForSignal" }
+    },
+    {
+      "description": "offers the remaining devices when the playing one disappears",
+      "from": { "state": "playing", "device": "card" },
+      "event": { "event": "devicesChanged", "devices": ["secondCard"] },
+      "expected": { "state": "ready", "devices": ["secondCard"] }
+    },
+    {
+      "description": "lists every ready device in order",
+      "from": { "state": "waitingForSignal" },
+      "event": { "event": "devicesChanged", "devices": ["card", "secondCard"] },
+      "expected": { "state": "ready", "devices": ["card", "secondCard"] }
+    },
+    {
+      "description": "the ready list follows unplugs",
+      "from": { "state": "ready", "devices": ["card", "secondCard"] },
+      "event": { "event": "devicesChanged", "devices": ["secondCard"] },
+      "expected": { "state": "ready", "devices": ["secondCard"] }
+    },
+    {
+      "description": "a failed start shows why",
+      "from": { "state": "ready", "devices": ["card"] },
+      "event": { "event": "playbackFailed", "failure": "failure" },
+      "expected": { "state": "failed", "failure": "failure" }
+    },
+    {
+      "description": "a failure is retried on the next device change",
+      "from": { "state": "failed", "failure": "failure" },
+      "event": { "event": "devicesChanged", "devices": ["card"] },
+      "expected": { "state": "ready", "devices": ["card"] }
+    },
+    {
+      "description": "a failure waits when no device is left",
+      "from": { "state": "failed", "failure": "failure" },
+      "event": { "event": "devicesChanged", "devices": [] },
+      "expected": { "state": "waitingForSignal" }
+    },
+    {
+      "description": "a stopped device waits for the device list",
+      "from": { "state": "playing", "device": "card" },
+      "event": { "event": "playbackStopped" },
+      "expected": { "state": "waitingForSignal" }
+    }
+  ],
+  "sequences": [
+    {
+      "description": "plug, unplug and replug move through waiting, ready and playing",
+      "from": { "state": "permissionNeeded", "permission": "camera" },
+      "steps": [
+        { "event": { "event": "permissionsGranted" }, "expected": { "state": "waitingForSignal" } },
+        { "event": { "event": "devicesChanged", "devices": [] }, "expected": { "state": "waitingForSignal" } },
+        { "event": { "event": "devicesChanged", "devices": ["card"] }, "expected": { "state": "ready", "devices": ["card"] } },
+        { "event": { "event": "playbackStarted", "device": "card" }, "expected": { "state": "playing", "device": "card" } },
+        { "event": { "event": "playbackStopped" }, "expected": { "state": "waitingForSignal" } },
+        { "event": { "event": "devicesChanged", "devices": [] }, "expected": { "state": "waitingForSignal" } },
+        { "event": { "event": "devicesChanged", "devices": ["card"] }, "expected": { "state": "ready", "devices": ["card"] } },
+        { "event": { "event": "playbackStarted", "device": "card" }, "expected": { "state": "playing", "device": "card" } }
+      ]
+    }
+  ]
+}

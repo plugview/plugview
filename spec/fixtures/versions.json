@@ -1,0 +1,18 @@
+{
+  "newer": [
+    { "candidate": "v0.3.0", "current": "0.2.0" },
+    { "candidate": "0.2.1", "current": "0.2.0" },
+    { "candidate": "1.0", "current": "0.9.9" },
+    { "candidate": "v0.10.0", "current": "0.9.0" },
+    { "candidate": "0.2.0.1", "current": "0.2.0" }
+  ],
+  "notNewer": [
+    { "candidate": "v0.2.0", "current": "0.2.0" },
+    { "candidate": "0.2", "current": "0.2.0" },
+    { "candidate": "0.1.9", "current": "0.2.0" },
+    { "candidate": "v1.0.0-beta", "current": "0.2.0" },
+    { "candidate": "", "current": "0.2.0" },
+    { "candidate": "v", "current": "0.2.0" },
+    { "candidate": "1.0.0", "current": "garbage" }
+  ]
+}

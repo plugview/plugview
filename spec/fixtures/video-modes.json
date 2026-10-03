@@ -1,0 +1,122 @@
+{
+  "bestModeIndex": [
+    {
+      "description": "prefers smooth 1080p over 4K at 30 fps",
+      "modes": [
+        { "width": 3840, "height": 2160, "maxFrameRate": 30, "encoding": "compressed" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "compressed" },
+        { "width": 1280, "height": 720, "maxFrameRate": 60, "encoding": "native" }
+      ],
+      "expected": 1
+    },
+    {
+      "description": "prefers the encoding with the least work when everything else ties; the first of equals wins",
+      "modes": [
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "compressed" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "converted" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "native" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "native" }
+      ],
+      "expected": 2
+    },
+    {
+      "description": "falls back to the highest resolution when nothing is smooth",
+      "modes": [
+        { "width": 1280, "height": 720, "maxFrameRate": 30, "encoding": "native" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 30, "encoding": "native" }
+      ],
+      "expected": 1
+    },
+    {
+      "description": "50 fps counts as smooth",
+      "modes": [
+        { "width": 3840, "height": 2160, "maxFrameRate": 30, "encoding": "native" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 50, "encoding": "native" }
+      ],
+      "expected": 1
+    },
+    {
+      "description": "no modes, no index",
+      "modes": [],
+      "expected": null
+    }
+  ],
+  "pickableModes": [
+    {
+      "description": "offers each size and frame rate once, largest and fastest first, skipping rates below 1 fps",
+      "modes": [
+        { "width": 1280, "height": 720, "maxFrameRate": 59.94, "encoding": "native" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "converted" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 30, "encoding": "compressed" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "native" },
+        { "width": 3840, "height": 2160, "maxFrameRate": 30, "encoding": "compressed" },
+        { "width": 640, "height": 480, "maxFrameRate": 0.5, "encoding": "native" }
+      ],
+      "expected": ["3840x2160@30", "1920x1080@60", "1920x1080@30", "1280x720@60"]
+    }
+  ],
+  "modeIndex": [
+    {
+      "description": "starts the chosen mode with the cheapest encoding",
+      "modes": [
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "converted" },
+        { "width": 1280, "height": 720, "maxFrameRate": 59.94, "encoding": "native" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "native" }
+      ],
+      "choice": "1920x1080@60",
+      "expected": 2
+    },
+    {
+      "description": "a choice matches a rate that rounds to it",
+      "modes": [
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "converted" },
+        { "width": 1280, "height": 720, "maxFrameRate": 59.94, "encoding": "native" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "native" }
+      ],
+      "choice": "1280x720@60",
+      "expected": 1
+    },
+    {
+      "description": "no choice starts the best mode",
+      "modes": [
+        { "width": 3840, "height": 2160, "maxFrameRate": 30, "encoding": "compressed" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "native" },
+        { "width": 1280, "height": 720, "maxFrameRate": 59.94, "encoding": "native" }
+      ],
+      "choice": null,
+      "expected": 1
+    },
+    {
+      "description": "a choice the device no longer offers starts the best mode",
+      "modes": [
+        { "width": 3840, "height": 2160, "maxFrameRate": 30, "encoding": "compressed" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "native" },
+        { "width": 1280, "height": 720, "maxFrameRate": 59.94, "encoding": "native" }
+      ],
+      "choice": "2560x1440@60",
+      "expected": 1
+    }
+  ],
+  "modeChoiceFromMode": [
+    {
+      "description": "rounds the frame rate; the key is saved, the title is shown in menus",
+      "mode": { "width": 1280, "height": 720, "maxFrameRate": 59.94, "encoding": "native" },
+      "key": "1280x720@60",
+      "title": "1280×720 · 60 fps"
+    }
+  ],
+  "modeChoiceKeys": {
+    "valid": [
+      { "key": "1920x1080@60", "width": 1920, "height": 1080, "frameRate": 60 },
+      { "key": "720x480@30", "width": 720, "height": 480, "frameRate": 30 }
+    ],
+    "invalid": ["", "1920x1080", "1920x1080@", "x1080@60", "1920x1080@60@1", "0x1080@60", "1920x1080@-60", "1920×1080@60", "wide"]
+  },
+  "summary": [
+    {
+      "description": "rounds the frame rate",
+      "mode": { "width": 1920, "height": 1080, "maxFrameRate": 60.00024, "encoding": "native" },
+      "expected": "1920×1080 @ 60 fps"
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+{
+  "devices": {
+    "usbCard": { "uniqueID": "0x1100345f2130", "name": "USB3.0 Video", "modelID": "UVC 345F:2130", "transport": "usb" },
+    "camLink": { "uniqueID": "camlink", "name": "Cam Link 4K", "modelID": "", "transport": "usb" },
+    "thunderboltCard": { "uniqueID": "tb", "name": "Thunderbolt Capture", "modelID": "", "transport": "other" },
+    "virtualCamera": { "uniqueID": "virt-1", "name": "Streaming Virtual Camera", "modelID": "", "transport": "virtual" },
+    "phoneCamera": { "uniqueID": "iphone", "name": "iPhone Camera", "modelID": "", "transport": "wireless" },
+    "builtInMic": { "uniqueID": "BuiltInMic", "name": "MacBook Pro Microphone", "modelID": "", "transport": "builtIn" },
+    "cardAudio": { "uniqueID": "AppleUSBAudioEngine:x", "name": "USB Digital Audio", "modelID": "USB Audio 345F", "transport": "usb" },
+    "cardAudioSameName": { "uniqueID": "audio-same-name", "name": "USB3.0 Video", "modelID": "", "transport": "other" },
+    "cardAudioSameModel": { "uniqueID": "audio-same-model", "name": "Other", "modelID": "UVC 345F:2130", "transport": "other" },
+    "usbHeadset": { "uniqueID": "headset", "name": "USB Headset", "modelID": "", "transport": "usb" }
+  },
+  "playableVideoDevices": [
+    {
+      "description": "lists wired hardware only, USB first",
+      "candidates": ["thunderboltCard", "phoneCamera", "usbCard", "virtualCamera"],
+      "query": null,
+      "expected": ["usbCard", "thunderboltCard"]
+    },
+    {
+      "description": "a query lists every matching device, whatever its transport",
+      "candidates": ["usbCard", "phoneCamera"],
+      "query": "iphone",
+      "expected": ["phoneCamera"]
+    }
+  ],
+  "selectVideoDevice": [
+    {
+      "description": "prefers USB hardware over virtual cameras",
+      "candidates": ["virtualCamera", "usbCard"],
+      "query": null,
+      "expected": "usbCard"
+    },
+    {
+      "description": "never auto-selects virtual or phone cameras",
+      "candidates": ["virtualCamera", "phoneCamera"],
+      "query": null,
+      "expected": null
+    },
+    {
+      "description": "a phone camera is used when asked for by name",
+      "candidates": ["phoneCamera"],
+      "query": "iphone",
+      "expected": "phoneCamera"
+    },
+    {
+      "description": "accepts wired capture hardware that is not USB",
+      "candidates": ["virtualCamera", "thunderboltCard"],
+      "query": null,
+      "expected": "thunderboltCard"
+    },
+    {
+      "description": "matches a name substring, ignoring case",
+      "candidates": ["usbCard", "virtualCamera"],
+      "query": "VIRTUAL",
+      "expected": "virtualCamera"
+    },
+    {
+      "description": "matches the unique ID exactly",
+      "candidates": ["virtualCamera", "usbCard"],
+      "query": "0x1100345f2130",
+      "expected": "usbCard"
+    },
+    {
+      "description": "finds nothing for an unknown name",
+      "candidates": ["usbCard"],
+      "query": "elgato",
+      "expected": null
+    }
+  ],
+  "selectAudioDevice": [
+    {
+      "description": "pairs the audio input with the same name",
+      "candidates": ["builtInMic", "cardAudio", "cardAudioSameName"],
+      "video": "usbCard",
+      "query": null,
+      "expected": "cardAudioSameName"
+    },
+    {
+      "description": "pairs the audio input with the same model ID",
+      "candidates": ["builtInMic", "cardAudioSameModel"],
+      "video": "usbCard",
+      "query": null,
+      "expected": "cardAudioSameModel"
+    },
+    {
+      "description": "falls back to the only USB audio input",
+      "candidates": ["builtInMic", "cardAudio"],
+      "video": "usbCard",
+      "query": null,
+      "expected": "cardAudio"
+    },
+    {
+      "description": "refuses to guess between several USB audio inputs",
+      "candidates": ["cardAudio", "usbHeadset"],
+      "video": "usbCard",
+      "query": null,
+      "expected": null
+    },
+    {
+      "description": "a query picks among several USB audio inputs",
+      "candidates": ["cardAudio", "usbHeadset"],
+      "video": "usbCard",
+      "query": "headset",
+      "expected": "usbHeadset"
+    },
+    {
+      "description": "never picks the built-in microphone",
+      "candidates": ["builtInMic"],
+      "video": "usbCard",
+      "query": null,
+      "expected": null
+    },
+    {
+      "description": "the only-USB-input fallback needs a USB video device",
+      "candidates": ["builtInMic", "cardAudio"],
+      "video": "thunderboltCard",
+      "query": null,
+      "expected": null
+    }
+  ],
+  "preferredFirst": [
+    {
+      "description": "moves the preferred device to the front",
+      "devices": ["usbCard", "camLink"],
+      "preferredID": "camlink",
+      "expected": ["camLink", "usbCard"]
+    },
+    {
+      "description": "keeps the order without a preference",
+      "devices": ["usbCard", "camLink"],
+      "preferredID": null,
+      "expected": ["usbCard", "camLink"]
+    },
+    {
+      "description": "keeps the order when the preferred device is unplugged",
+      "devices": ["usbCard", "camLink"],
+      "preferredID": "unplugged",
+      "expected": ["usbCard", "camLink"]
+    }
+  ],
+  "shouldAutoPlay": [
+    { "description": "plays a single device", "devices": ["usbCard"], "preferredID": null, "expected": true },
+    { "description": "plays the remembered device among several", "devices": ["usbCard", "camLink"], "preferredID": "camlink", "expected": true },
+    { "description": "waits for a pick among several new devices", "devices": ["usbCard", "camLink"], "preferredID": null, "expected": false },
+    { "description": "waits when the remembered device is unplugged", "devices": ["usbCard", "camLink"], "preferredID": "unplugged", "expected": false }
+  ]
+}

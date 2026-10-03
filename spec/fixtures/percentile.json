@@ -1,0 +1,9 @@
+[
+  { "description": "no samples, no value", "samples": [], "fraction": 0.5, "expected": null },
+  { "description": "median of an unsorted list", "samples": [3, 1, 2], "fraction": 0.5, "expected": 2 },
+  { "description": "the maximum", "samples": [1, 2, 3, 4, 100], "fraction": 1, "expected": 100 },
+  { "description": "the minimum", "samples": [5, 1], "fraction": 0, "expected": 1 },
+  { "description": "nearest rank rounds half away from zero", "samples": [10, 20], "fraction": 0.5, "expected": 20 },
+  { "description": "p95 of twenty samples", "samples": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], "fraction": 0.95, "expected": 19 },
+  { "description": "fractions outside 0...1 are clamped", "samples": [1, 2, 3], "fraction": 7, "expected": 3 }
+]

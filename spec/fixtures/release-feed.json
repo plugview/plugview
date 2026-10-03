@@ -1,0 +1,124 @@
+{
+  "cases": [
+    {
+      "description": "offers the newer release for this platform and kind, ignoring other platforms",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": {
+        "schemaVersion": 1,
+        "version": "0.4.0",
+        "releasedAt": "2026-10-03",
+        "artifacts": [
+          { "platform": "linux", "arch": "x86_64", "kind": "cli", "url": "https://plugview.app/releases/0.4.0/l.tar.gz", "sha256": "cd", "size": 1 },
+          { "platform": "macos", "arch": "universal", "kind": "app", "url": "https://plugview.app/releases/0.4.0/plugview-0.4.0-macos-universal-app.zip", "sha256": "ab", "size": 1 }
+        ]
+      },
+      "expected": { "update": { "version": "0.4.0", "url": "https://plugview.app/releases/0.4.0/plugview-0.4.0-macos-universal-app.zip" } }
+    },
+    {
+      "description": "unknown fields and platforms are ignored",
+      "currentVersion": "0.3.0",
+      "platform": "windows",
+      "kind": "app",
+      "feed": {
+        "schemaVersion": 1,
+        "version": "0.4.0",
+        "notes": "anything",
+        "artifacts": [
+          { "platform": "plan9", "arch": "mips", "kind": "app", "url": "https://plugview.app/x" },
+          { "platform": "windows", "arch": "x64", "kind": "app", "url": "https://plugview.app/releases/0.4.0/w.msix" }
+        ]
+      },
+      "expected": { "update": { "version": "0.4.0", "url": "https://plugview.app/releases/0.4.0/w.msix" } }
+    },
+    {
+      "description": "offers nothing when up to date",
+      "currentVersion": "0.4.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0", "artifacts": [{ "platform": "macos", "arch": "universal", "kind": "app", "url": "https://plugview.app/x.zip" }] },
+      "expected": { "update": null }
+    },
+    {
+      "description": "skips a release without a download for this platform",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0", "artifacts": [{ "platform": "windows", "arch": "x64", "kind": "app", "url": "https://plugview.app/x.zip" }] },
+      "expected": { "update": null }
+    },
+    {
+      "description": "skips a release without a download of this kind",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0", "artifacts": [{ "platform": "macos", "arch": "universal", "kind": "cli", "url": "https://plugview.app/x.tar.gz" }] },
+      "expected": { "update": null }
+    },
+    {
+      "description": "an older release is ignored before its download is checked",
+      "currentVersion": "0.5.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0", "artifacts": [{ "platform": "macos", "arch": "universal", "kind": "app", "url": "https://evil.example/x.zip" }] },
+      "expected": { "update": null }
+    },
+    {
+      "description": "rejects plain http",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0", "artifacts": [{ "platform": "macos", "arch": "universal", "kind": "app", "url": "http://plugview.app/x.zip" }] },
+      "expected": { "error": "untrustedURL", "url": "http://plugview.app/x.zip" }
+    },
+    {
+      "description": "rejects another host",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0", "artifacts": [{ "platform": "macos", "arch": "universal", "kind": "app", "url": "https://evil.example/x.zip" }] },
+      "expected": { "error": "untrustedURL", "url": "https://evil.example/x.zip" }
+    },
+    {
+      "description": "rejects a host that only starts with plugview.app",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0", "artifacts": [{ "platform": "macos", "arch": "universal", "kind": "app", "url": "https://plugview.app.evil.example/x.zip" }] },
+      "expected": { "error": "untrustedURL", "url": "https://plugview.app.evil.example/x.zip" }
+    },
+    {
+      "description": "rejects plugview.app as user info in front of another host",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0", "artifacts": [{ "platform": "macos", "arch": "universal", "kind": "app", "url": "https://plugview.app@evil.example/x.zip" }] },
+      "expected": { "error": "untrustedURL", "url": "https://plugview.app@evil.example/x.zip" }
+    },
+    {
+      "description": "rejects an unknown schema",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 2, "version": "0.4.0", "artifacts": [] },
+      "expected": { "error": "unsupportedSchema", "schemaVersion": 2 }
+    },
+    {
+      "description": "rejects a feed with missing fields",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feed": { "schemaVersion": 1, "version": "0.4.0" },
+      "expected": { "error": "malformed" }
+    },
+    {
+      "description": "rejects a page that is not JSON",
+      "currentVersion": "0.3.0",
+      "platform": "macos",
+      "kind": "app",
+      "feedText": "<html>404</html>",
+      "expected": { "error": "malformed" }
+    }
+  ]
+}

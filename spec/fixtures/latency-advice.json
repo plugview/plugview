@@ -1,0 +1,30 @@
+{
+  "healthy": { "requestedFrameRate": 60, "deliveredFrameRate": 60, "displayRefreshRate": 120, "outputLatencyMilliseconds": 16, "isOutputBluetooth": false },
+  "cases": [
+    { "description": "a healthy setup needs no advice", "facts": {}, "expected": [] },
+    { "description": "59.94 Hz counts as 60", "facts": { "displayRefreshRate": 59.94 }, "expected": [] },
+    { "description": "unknown refresh rate and output latency are not flagged", "facts": { "displayRefreshRate": null, "outputLatencyMilliseconds": null }, "expected": [] },
+    { "description": "a little under the requested rate is fine", "facts": { "deliveredFrameRate": 57, "displayRefreshRate": null }, "expected": [] },
+    { "description": "clearly under it is flagged", "facts": { "deliveredFrameRate": 53, "displayRefreshRate": null }, "expected": [{ "issue": "lowFrameRate", "delivered": 53, "requested": 60 }] },
+    {
+      "description": "a low frame rate comes first",
+      "facts": { "deliveredFrameRate": 20 },
+      "expected": [{ "issue": "lowFrameRate", "delivered": 20, "requested": 60 }]
+    },
+    {
+      "description": "Bluetooth replaces the slow-output advice",
+      "facts": { "isOutputBluetooth": true, "outputLatencyMilliseconds": 200 },
+      "expected": [{ "issue": "bluetoothOutput" }]
+    },
+    { "description": "40 ms output is not slow", "facts": { "outputLatencyMilliseconds": 40 }, "expected": [] },
+    { "description": "a slow wired output", "facts": { "outputLatencyMilliseconds": 55.4 }, "expected": [{ "issue": "slowOutput", "milliseconds": 55 }] },
+    { "description": "100 Hz is not a multiple of 60 fps", "facts": { "displayRefreshRate": 100 }, "expected": [{ "issue": "unevenRefresh", "refreshRate": 100, "frameRate": 60 }] },
+    { "description": "a display slower than the frame rate", "facts": { "displayRefreshRate": 50 }, "expected": [{ "issue": "unevenRefresh", "refreshRate": 50, "frameRate": 60 }] },
+    { "description": "no frames, no refresh advice", "facts": { "deliveredFrameRate": 0 }, "expected": [{ "issue": "lowFrameRate", "delivered": 0, "requested": 60 }] },
+    {
+      "description": "every issue at once, in order",
+      "facts": { "deliveredFrameRate": 30, "isOutputBluetooth": true, "displayRefreshRate": 144 },
+      "expected": [{ "issue": "lowFrameRate", "delivered": 30, "requested": 60 }, { "issue": "bluetoothOutput" }, { "issue": "unevenRefresh", "refreshRate": 144, "frameRate": 30 }]
+    }
+  ]
+}

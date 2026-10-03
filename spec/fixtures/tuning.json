@@ -1,0 +1,9 @@
+{
+  "smoothFrameRate": 50,
+  "cardAudioWaitSeconds": 1,
+  "volumeStepPercent": 10,
+  "controlsHideSeconds": 2.5,
+  "updateCheckIntervalSeconds": 86400,
+  "measurementSeconds": 5,
+  "slowOutputLatencyMilliseconds": 40
+}

@@ -1,0 +1,55 @@
+{
+  "defaults": { "videoQuery": null, "audioQuery": null, "isAudioEnabled": true, "volumePercent": 100, "startsInFullScreen": false, "mode": null },
+  "cases": [
+    {
+      "description": "no arguments runs with audio at full volume",
+      "arguments": [],
+      "expected": { "command": "run", "options": {} }
+    },
+    {
+      "description": "reads every run option",
+      "arguments": ["--device", "USB Video", "-a", "USB Audio", "-v", "40", "-f"],
+      "expected": { "command": "run", "options": { "videoQuery": "USB Video", "audioQuery": "USB Audio", "volumePercent": 40, "startsInFullScreen": true } }
+    },
+    {
+      "description": "long and short spellings are the same",
+      "arguments": ["-d", "UGREEN", "--audio", "UGREEN", "--volume", "0", "--fullscreen"],
+      "expected": { "command": "run", "options": { "videoQuery": "UGREEN", "audioQuery": "UGREEN", "volumePercent": 0, "startsInFullScreen": true } }
+    },
+    {
+      "description": "measures with the same device options",
+      "arguments": ["--measure", "-d", "UGREEN", "--no-audio"],
+      "expected": { "command": "measure", "options": { "videoQuery": "UGREEN", "isAudioEnabled": false } }
+    },
+    {
+      "description": "reads the capture mode",
+      "arguments": ["--mode", "1280x720@60"],
+      "expected": { "command": "run", "options": { "mode": "1280x720@60" } }
+    },
+    {
+      "description": "the capture mode accepts the multiplication sign",
+      "arguments": ["--mode", "1280×720@60"],
+      "expected": { "command": "run", "options": { "mode": "1280x720@60" } }
+    },
+    {
+      "description": "the capture mode ignores case",
+      "arguments": ["--mode", "1280X720@60"],
+      "expected": { "command": "run", "options": { "mode": "1280x720@60" } }
+    },
+    { "description": "list wins over other options", "arguments": ["-d", "x", "--list"], "expected": { "command": "listDevices" } },
+    { "description": "short list", "arguments": ["-l"], "expected": { "command": "listDevices" } },
+    { "description": "help wins over other options", "arguments": ["--volume", "10", "-h"], "expected": { "command": "showHelp" } },
+    { "description": "long help", "arguments": ["--help"], "expected": { "command": "showHelp" } },
+    { "description": "version", "arguments": ["--version"], "expected": { "command": "showVersion" } },
+    { "description": "options are read in order, so an earlier error wins", "arguments": ["--bogus", "--help"], "expected": { "error": "unknown option '--bogus'" } },
+    { "description": "volume above 100", "arguments": ["--volume", "101"], "expected": { "error": "--volume must be a whole number from 0 to 100, got '101'" } },
+    { "description": "a value that starts with a dash is a missing value", "arguments": ["--volume", "-1"], "expected": { "error": "--volume needs a value" } },
+    { "description": "volume that is not a number", "arguments": ["-v", "loud"], "expected": { "error": "-v must be a whole number from 0 to 100, got 'loud'" } },
+    { "description": "device without a value", "arguments": ["--device"], "expected": { "error": "--device needs a value" } },
+    { "description": "device followed by another option", "arguments": ["--device", "--no-audio"], "expected": { "error": "--device needs a value" } },
+    { "description": "empty value", "arguments": ["-a", ""], "expected": { "error": "-a needs a value" } },
+    { "description": "unknown option", "arguments": ["--bogus"], "expected": { "error": "unknown option '--bogus'" } },
+    { "description": "malformed mode", "arguments": ["--mode", "720p"], "expected": { "error": "--mode must look like 1920x1080@60, got '720p'" } },
+    { "description": "audio query with audio off", "arguments": ["--audio", "x", "--no-audio"], "expected": { "error": "--audio and --no-audio cannot be combined" } }
+  ]
+}
