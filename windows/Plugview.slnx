@@ -3,6 +3,7 @@
     <Project Path="src/Plugview.Core/Plugview.Core.csproj" />
     <Project Path="src/Plugview.Windows/Plugview.Windows.csproj" />
     <Project Path="src/Plugview.Cli/Plugview.Cli.csproj" />
+    <Project Path="src/Plugview.App/Plugview.App.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Plugview.Core.Tests/Plugview.Core.Tests.csproj" />

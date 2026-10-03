@@ -6,4 +6,8 @@
     <RootNamespace>Plugview.Core</RootNamespace>
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- The brand every platform draws with; BrandKit reads it, the tests compare against the same file. -->
+    <EmbeddedResource Include="../../../spec/fixtures/brand.json" LogicalName="Plugview.Core.brand.json" />
+  </ItemGroup>
 </Project>

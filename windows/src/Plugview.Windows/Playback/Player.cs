@@ -12,7 +12,7 @@ using Windows.Win32.Graphics.Gdi;
 
 namespace Plugview.Windows.Playback;
 
-/// <summary>The command's three jobs on Windows: list devices, play in a window, and measure (spec: "Command").</summary>
+/// <summary>The command's jobs without a window: list devices and measure (spec: "Command"); playing is <see cref="App.AppHost"/>.</summary>
 public static class Player
 {
     private const int ExitFailure = 1;
@@ -35,80 +35,6 @@ public static class Player
         output.WriteLine("Audio inputs:");
         if (audios.Count == 0) output.WriteLine("  (none)");
         foreach (var audio in audios) output.WriteLine($"  {audio.Name}  [{TransportName(audio.Transport)}]  id: {audio.UniqueId}");
-        return 0;
-    }
-
-    /// <summary>Plays the selected card in a window until it closes.</summary>
-    public static async Task<int> RunAsync(RunOptions options, TextWriter output, TextWriter error)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(output);
-        ArgumentNullException.ThrowIfNull(error);
-        var (video, audioInput) = await SelectDevicesAsync(options, error);
-        if (video is null) return ExitFailure;
-
-        using var presenter = new VideoPresenter();
-        var window = new PlayerWindow("plugview", 1280, 720);
-        var (width, height) = window.ClientSize;
-        presenter.Attach(window.Handle, width, height);
-        window.Resized += presenter.Resize;
-
-        VideoCapture capture;
-        try
-        {
-            capture = new VideoCapture(video, options.Mode, presenter);
-        }
-        catch (Exception failure) when (failure is System.Runtime.InteropServices.COMException or UnauthorizedAccessException or InvalidOperationException)
-        {
-            error.WriteLine($"plugview: {CaptureErrors.Describe(failure, video.Name)}");
-            return ExitFailure;
-        }
-        using (capture)
-        {
-            using var audio = StartAudio(audioInput, video, options, error);
-            var volumePercent = options.VolumePercent;
-            var isMuted = false;
-            void ApplyVolume()
-            {
-                if (audio is not null) audio.Volume = isMuted ? 0 : volumePercent / 100f;
-            }
-            ApplyVolume();
-
-            window.KeyPressed += key =>
-            {
-                switch (key)
-                {
-                    case PlayerKey.ToggleFullScreen: window.ToggleFullScreen(); break;
-                    case PlayerKey.LeaveFullScreen when window.IsFullScreen: window.ToggleFullScreen(); break;
-                    case PlayerKey.LeaveFullScreen: break;
-                    case PlayerKey.ToggleMute:
-                        isMuted = !isMuted;
-                        ApplyVolume();
-                        output.WriteLine(isMuted ? "Muted" : $"Volume {volumePercent}%");
-                        break;
-                    case PlayerKey.VolumeUp or PlayerKey.VolumeDown:
-                        volumePercent = Math.Clamp(volumePercent + (key == PlayerKey.VolumeUp ? Tuning.VolumeStepPercent : -Tuning.VolumeStepPercent), 0, 100);
-                        isMuted = false;
-                        ApplyVolume();
-                        output.WriteLine($"Volume {volumePercent}%");
-                        break;
-                    case PlayerKey.Quit: window.Close(); break;
-                }
-            };
-            capture.Stopped += failure =>
-            {
-                error.WriteLine($"plugview: {CaptureErrors.Describe(failure, video.Name)}");
-                window.Close();
-            };
-
-            var audioSummary = audio is null ? "no audio" : $"audio from {audio.InputName}";
-            output.WriteLine($"Showing {video.Name} · {capture.Mode.Summary}, {audioSummary}");
-            window.SetTitle($"{video.Name} · {capture.Mode.Summary}");
-            capture.Start();
-            audio?.Start();
-            if (options.StartsInFullScreen) window.ToggleFullScreen();
-            window.RunUntilClosed();
-        }
         return 0;
     }
 

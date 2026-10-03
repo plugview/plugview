@@ -8,9 +8,17 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsAotCompatible>true</IsAotCompatible>
     <RootNamespace>Plugview.Windows</RootNamespace>
+    <!-- Structures whose layout depends on the pointer size (NOTIFYICONDATAW) as on every 64-bit Windows (x64, Arm64). -->
+    <CsWin32PlatformTarget>x64</CsWin32PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Plugview.Windows.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Geist and Geist Mono (SIL OFL), the same files the Mac bundles; DirectWrite reads them from memory. -->
+    <EmbeddedResource Include="../../../Sources/PlugviewUI/Fonts/*.ttf" LogicalName="Plugview.Windows.Fonts.%(Filename)%(Extension)" />
+    <!-- Tray icons (windows/scripts/icons.sh); the app icon goes into the executables as a Win32 resource. -->
+    <EmbeddedResource Include="Assets/tray-*.ico" LogicalName="Plugview.Windows.Assets.%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Plugview.Core/Plugview.Core.csproj" />

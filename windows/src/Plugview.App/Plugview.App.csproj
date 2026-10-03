@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- plugview-app.exe: the Start menu entry and launch at login (no console window). The `plugview` command is
+       Plugview.Cli; both run the same window from Plugview.Windows (spec "Launch mode": two executables). -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>plugview-app</AssemblyName>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <RootNamespace>Plugview.App</RootNamespace>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ApplicationIcon>../Plugview.Windows/Assets/plugview.ico</ApplicationIcon>
+    <ApplicationManifest>../Plugview.Windows/Assets/app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Plugview.Core/Plugview.Core.csproj" />
+    <ProjectReference Include="../Plugview.Windows/Plugview.Windows.csproj" />
+  </ItemGroup>
+</Project>

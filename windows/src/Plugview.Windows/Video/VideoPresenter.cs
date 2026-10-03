@@ -27,6 +27,22 @@ internal readonly record struct FrameFormat(uint Width, uint Height, DXGI_FORMAT
     };
 }
 
+/// <summary>One frame read back from the GPU as 8-bit BGRA rows, for a screenshot or the signal watch.</summary>
+internal sealed record FrameGrab(uint Width, uint Height, byte[] Bgra)
+{
+    /// <summary>The brightest pixel's luma (BT.709, 0–255): how the signal watch tells a black picture (K01).</summary>
+    public int MaxLuma()
+    {
+        var max = 0.0;
+        for (var index = 0; index + 3 < Bgra.Length; index += 4)
+        {
+            var luma = (0.0722 * Bgra[index]) + (0.7152 * Bgra[index + 1]) + (0.2126 * Bgra[index + 2]);
+            if (luma > max) max = luma;
+        }
+        return (int)Math.Round(max);
+    }
+}
+
 /// <summary>
 /// Draws capture frames into a window with the least delay Windows allows (K08-K10).
 /// </summary>
@@ -56,6 +72,58 @@ internal sealed unsafe class VideoPresenter : IDisposable
     private DXGI_FORMAT uploadFormat;
     private (uint Width, uint Height) windowSize;
     private bool isTearingSupported;
+    private bool expandsLimitedRange;
+    private readonly List<(uint Width, uint Height, Action<FrameGrab?> Done)> grabRequests = [];
+
+    /// <summary>
+    /// Full-range colors: stretches the picture's levels (16–235 to 0–255) for cards that pass a console's limited
+    /// range through as if it were full, which leaves blacks gray. Applied by the GPU's video processor (contrast and
+    /// brightness), so the frames stay on the GPU; drivers without those filters leave the picture as it is.
+    /// </summary>
+    public bool ExpandsLimitedRange
+    {
+        get
+        {
+            lock (gate) return expandsLimitedRange;
+        }
+        set
+        {
+            lock (gate)
+            {
+                expandsLimitedRange = value;
+                // Rebuilt with the new filters on the next frame.
+                processor.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reads the next frame back at <paramref name="width"/>×<paramref name="height"/> (0×0: the frame's own size) and hands
+    /// it to <paramref name="done"/> on the capture thread; <c>null</c> when it could not be read.
+    /// </summary>
+    public void RequestGrab(uint width, uint height, Action<FrameGrab?> done)
+    {
+        lock (gate) grabRequests.Add((width, height, done));
+    }
+
+    /// <summary>Shows black: the card stopped, so its last frame must not linger under the launcher or a notice.</summary>
+    public void Clear()
+    {
+        lock (gate)
+        {
+            if (swapChain.IsNull) return;
+            ID3D11Texture2D* rawBackBuffer;
+            var textureId = ID3D11Texture2D.IID_Guid;
+            swapChain.Get()->GetBuffer(0, &textureId, (void**)&rawBackBuffer);
+            using var backBuffer = new ComPtr<ID3D11Texture2D>(rawBackBuffer);
+            ID3D11RenderTargetView* rawView;
+            device.Get()->CreateRenderTargetView((ID3D11Resource*)backBuffer.Get(), null, &rawView);
+            using var view = new ComPtr<ID3D11RenderTargetView>(rawView);
+            var black = stackalloc float[] { 0, 0, 0, 1 };
+            context.Get()->ClearRenderTargetView(view.Get(), black);
+            swapChain.Get()->Present(0, 0);
+        }
+    }
 
     public VideoPresenter()
     {
@@ -135,6 +203,113 @@ internal sealed unsafe class VideoPresenter : IDisposable
             var stream = new D3D11_VIDEO_PROCESSOR_STREAM { Enable = true, pInputSurface = inputView.Get() };
             videoContext.Get()->VideoProcessorBlt(processor.Get(), outputView.Get(), 0, 1, &stream);
             swapChain.Get()->Present(1, 0).ThrowOnFailure();
+            if (grabRequests.Count > 0) ServeGrabs(&stream, format);
+        }
+    }
+
+    /// <summary>
+    /// Draws the frame once more into a small texture per request and reads it back. Runs after the frame is presented,
+    /// so a screenshot or the signal watch never delays the picture.
+    /// </summary>
+    private void ServeGrabs(D3D11_VIDEO_PROCESSOR_STREAM* stream, FrameFormat format)
+    {
+        var requests = grabRequests.ToArray();
+        grabRequests.Clear();
+        var video = videoContext.Get();
+        try
+        {
+            foreach (var (requestedWidth, requestedHeight, done) in requests)
+            {
+                var (width, height) = requestedWidth == 0 ? (format.Width, format.Height) : (requestedWidth, requestedHeight);
+                done(Grab(stream, width, height));
+            }
+        }
+        finally
+        {
+            // Back to drawing into the window.
+            var target = new RECT { right = (int)windowSize.Width, bottom = (int)windowSize.Height };
+            video->VideoProcessorSetOutputTargetRect(processor.Get(), true, &target);
+            var picture = Letterbox(format.Width, format.Height, windowSize.Width, windowSize.Height);
+            video->VideoProcessorSetStreamDestRect(processor.Get(), 0, true, &picture);
+        }
+    }
+
+    private FrameGrab? Grab(D3D11_VIDEO_PROCESSOR_STREAM* stream, uint width, uint height)
+    {
+        try
+        {
+            var description = new D3D11_TEXTURE2D_DESC
+            {
+                Width = width,
+                Height = height,
+                MipLevels = 1,
+                ArraySize = 1,
+                Format = DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM,
+                SampleDesc = new DXGI_SAMPLE_DESC { Count = 1 },
+                Usage = D3D11_USAGE.D3D11_USAGE_DEFAULT,
+                BindFlags = D3D11_BIND_FLAG.D3D11_BIND_RENDER_TARGET,
+            };
+            ID3D11Texture2D* rawTarget;
+            device.Get()->CreateTexture2D(&description, null, &rawTarget);
+            using var target = new ComPtr<ID3D11Texture2D>(rawTarget);
+            var video = videoContext.Get();
+            var whole = new RECT { right = (int)width, bottom = (int)height };
+            video->VideoProcessorSetOutputTargetRect(processor.Get(), true, &whole);
+            video->VideoProcessorSetStreamDestRect(processor.Get(), 0, true, &whole);
+            using (var view = OutputView(target.Get())) video->VideoProcessorBlt(processor.Get(), view.Get(), 0, 1, stream);
+
+            description.Usage = D3D11_USAGE.D3D11_USAGE_STAGING;
+            description.BindFlags = 0;
+            description.CPUAccessFlags = D3D11_CPU_ACCESS_FLAG.D3D11_CPU_ACCESS_READ;
+            ID3D11Texture2D* rawStaging;
+            device.Get()->CreateTexture2D(&description, null, &rawStaging);
+            using var staging = new ComPtr<ID3D11Texture2D>(rawStaging);
+            context.Get()->CopyResource((ID3D11Resource*)staging.Get(), (ID3D11Resource*)target.Get());
+            D3D11_MAPPED_SUBRESOURCE mapped;
+            context.Get()->Map((ID3D11Resource*)staging.Get(), 0, D3D11_MAP.D3D11_MAP_READ, 0, &mapped);
+            try
+            {
+                var rowBytes = (int)width * 4;
+                var pixels = new byte[rowBytes * (int)height];
+                for (var row = 0; row < height; row++)
+                {
+                    new ReadOnlySpan<byte>((byte*)mapped.pData + (row * mapped.RowPitch), rowBytes).CopyTo(pixels.AsSpan(row * rowBytes));
+                }
+                return new FrameGrab(width, height, pixels);
+            }
+            finally
+            {
+                context.Get()->Unmap((ID3D11Resource*)staging.Get(), 0);
+            }
+        }
+        catch (System.Runtime.InteropServices.COMException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Full-range colors through the video processor's contrast and brightness filters, when the driver has them:
+    /// contrast ×255/219 around black, brightness −16 code values (the Mac's levels expansion, approximated in YCbCr).
+    /// </summary>
+    private void ApplyLevels()
+    {
+        var video = videoContext.Get();
+        D3D11_VIDEO_PROCESSOR_CAPS caps;
+        processorEnumerator.Get()->GetVideoProcessorCaps(&caps);
+        var filters = (D3D11_VIDEO_PROCESSOR_FILTER_CAPS)caps.FilterCaps;
+        foreach (var (filter, flag, value) in (ReadOnlySpan<(D3D11_VIDEO_PROCESSOR_FILTER, D3D11_VIDEO_PROCESSOR_FILTER_CAPS, float)>)
+            [
+                (D3D11_VIDEO_PROCESSOR_FILTER.D3D11_VIDEO_PROCESSOR_FILTER_CONTRAST, D3D11_VIDEO_PROCESSOR_FILTER_CAPS.D3D11_VIDEO_PROCESSOR_FILTER_CAPS_CONTRAST, 255f / 219f),
+                (D3D11_VIDEO_PROCESSOR_FILTER.D3D11_VIDEO_PROCESSOR_FILTER_BRIGHTNESS, D3D11_VIDEO_PROCESSOR_FILTER_CAPS.D3D11_VIDEO_PROCESSOR_FILTER_CAPS_BRIGHTNESS, -16f),
+            ])
+        {
+            if (!filters.HasFlag(flag)) continue;
+            D3D11_VIDEO_PROCESSOR_FILTER_RANGE range;
+            processorEnumerator.Get()->GetVideoProcessorFilterRange(filter, &range);
+            if (range.Multiplier <= 0) continue;
+            var level = (int)Math.Clamp(Math.Round(value / range.Multiplier), range.Minimum, range.Maximum);
+            video->VideoProcessorSetStreamFilter(processor.Get(), 0, filter, true, level);
         }
     }
 
@@ -214,6 +389,7 @@ internal sealed unsafe class VideoPresenter : IDisposable
     private void EnsureProcessor(FrameFormat format)
     {
         if (!processor.IsNull && processorInput == format && processorOutput == windowSize) return;
+        processor.Dispose();
         var content = new D3D11_VIDEO_PROCESSOR_CONTENT_DESC
         {
             InputFrameFormat = D3D11_VIDEO_FRAME_FORMAT.D3D11_VIDEO_FRAME_FORMAT_PROGRESSIVE,
@@ -241,6 +417,7 @@ internal sealed unsafe class VideoPresenter : IDisposable
         video->VideoProcessorSetOutputTargetRect(processor.Get(), true, &target);
         var picture = Letterbox(format.Width, format.Height, windowSize.Width, windowSize.Height);
         video->VideoProcessorSetStreamDestRect(processor.Get(), 0, true, &picture);
+        if (expandsLimitedRange) ApplyLevels();
 
         processorInput = format;
         processorOutput = windowSize;

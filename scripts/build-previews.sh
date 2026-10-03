@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Builds the Windows and Linux preview downloads into .build/dist/, where scripts/release.sh picks them up:
 #
-#   plugview-windows-x64.zip, plugview-windows-arm64.zip   self-contained plugview.exe (.NET 10 SDK; NativeAOT needs a
-#                                                         Windows host, so these are single-file builds for now)
+#   plugview-windows-x64.zip, plugview-windows-arm64.zip   self-contained plugview-app.exe and plugview.exe (.NET 10 SDK;
+#                                                         NativeAOT needs a Windows host, so single-file builds for now)
 #   plugview-linux-x86_64.tar.gz                          built in a Fedora 42 container (Docker); runs where GTK 4.16+,
 #                                                         libadwaita 1.6+ and GStreamer 1.24+ are installed
 #   plugview-linux-x86_64.flatpak                         the same app as a Flatpak bundle on the GNOME 51 runtime
@@ -25,15 +25,19 @@ rm -rf "$WORK" && mkdir -p "$WORK" "$DIST"
 
 # --- Windows ---
 
+# Two executables (spec "Launch mode"): plugview-app.exe for the Start menu and plugview.exe, the command. Each is a
+# self-contained single file until NativeAOT builds on a Windows host (phase 6.6) make them small.
 for arch in x64 arm64; do
   out="$WORK/windows-$arch/plugview-$VERSION"
-  DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 "$DOTNET" publish windows/src/Plugview.Cli -c Release -r "win-$arch" --self-contained \
-    -p:PublishAot=false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true \
-    -p:DebugType=none -p:GenerateDocumentationFile=false -o "$out" >/dev/null
+  for project in Plugview.App Plugview.Cli; do
+    DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 "$DOTNET" publish "windows/src/$project" -c Release -r "win-$arch" --self-contained \
+      -p:PublishAot=false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true \
+      -p:DebugType=none -p:GenerateDocumentationFile=false -o "$out" >/dev/null
+  done
   rm -f "$out"/*.xml "$out"/*.pdb
   cp LICENSE "$out/LICENSE.txt"
   cp windows/README.md "$out/README.md"
-  [[ -f "$out/plugview.exe" ]] || fail "windows-$arch: no plugview.exe"
+  [[ -f "$out/plugview.exe" && -f "$out/plugview-app.exe" ]] || fail "windows-$arch: plugview.exe or plugview-app.exe missing"
   rm -f "$DIST/plugview-windows-$arch.zip"
   (cd "$WORK/windows-$arch" && zip -q -r "$ROOT/$DIST/plugview-windows-$arch.zip" "plugview-$VERSION")
   echo "$DIST/plugview-windows-$arch.zip"

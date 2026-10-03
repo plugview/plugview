@@ -6,6 +6,14 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **The Windows app** (not released yet): the Mac's launcher with the brand animations, the controls bar that fades
+  while you play (volume, screenshot, resolution with Full-range colors, device, full screen), screenshots in
+  Pictures\plugview, the No signal watch with the console checklists, a tray icon that opens plugview when a card is
+  plugged in and can start it at login, Narrator and keyboard support. `plugview-app.exe` is the app; `plugview.exe`
+  stays the command and opens the same window.
+
 ## [0.4.4] - 2026-10-03
 
 ### Added

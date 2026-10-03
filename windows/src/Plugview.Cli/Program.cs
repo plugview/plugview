@@ -2,6 +2,7 @@ using System.Text;
 using Plugview.Cli;
 using Plugview.Core;
 using Plugview.Core.CommandLine;
+using Plugview.Windows.App;
 using Plugview.Windows.Playback;
 
 // sysexits.h EX_USAGE, as on the Mac (spec: "Command").
@@ -33,7 +34,8 @@ switch (command)
     case Command.Measure measure:
         return await Player.MeasureAsync(measure.Options, Console.Out, Console.Error);
     case Command.Run run:
-        return await Player.RunAsync(run.Options, Console.Out, Console.Error);
+        // The same window as the app (launcher, controls, signal watch), as the command: closing it quits.
+        return AppHost.RunCommand(run.Options);
     default:
         throw new InvalidOperationException($"unhandled command {command}");
 }

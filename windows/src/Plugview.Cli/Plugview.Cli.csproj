@@ -9,6 +9,8 @@
     <RootNamespace>Plugview.Cli</RootNamespace>
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <ApplicationIcon>../Plugview.Windows/Assets/plugview.ico</ApplicationIcon>
+    <ApplicationManifest>../Plugview.Windows/Assets/app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Plugview.Core/Plugview.Core.csproj" />
