@@ -1,0 +1,26 @@
+[workspace]
+resolver = "3"
+members = ["crates/plugview-core"]
+
+[workspace.package]
+version = "0.3.1"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/plugview/plugview"
+rust-version = "1.85"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+# Frame sizes and rates are small positive numbers; casts between them are checked where they matter.
+cast_possible_truncation = "allow"
+cast_precision_loss = "allow"
+cast_sign_loss = "allow"
+cast_possible_wrap = "allow"
+module_name_repetitions = "allow"
