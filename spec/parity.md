@@ -18,7 +18,7 @@ The source is the brand kit (`plugview-design/`); the numbers every platform dra
 | The mark, the waiting loop, the plug-in intro, the live loop (64-unit geometry, keyframes and easing from `brand.json`) | ✓ tested | ✗ 6.3 (Composition/Win2D) | ✓ cairo, from `brand.json` |
 | Reduce Motion freezes every animation on its resting frame | ✓ | ✗ 6.3 (Animation effects off) | ✓ `gtk-enable-animations` |
 | App icon from `plugview-icon.svg` | ✓ | ✗ 6.6 (.ico, MSIX tiles) | ✗ 6.10 (hicolor SVG and symbolic) |
-| Menu bar / tray icon: empty, signal, playing | ✓ | ✗ 6.5 | ✗ 6.9 |
+| Menu bar / tray icon: empty, signal, playing | ✓ | ✗ 6.5 | ✓ drawn from `brand.json` (bone on every panel) |
 | Lowercase `plugview`, no emojis, words or line icons only | ✓ | ✓ (text so far) | ✓ (text so far) |
 | Control icons from the platform's own set | ✓ SF Symbols | ✗ 6.4 Segoe Fluent Icons | ✓ Adwaita symbolic |
 | English and Spanish | ✗ 5.3 | ✗ 5.3 | ✗ 5.3 |
@@ -34,7 +34,7 @@ The source is the brand kit (`plugview-design/`); the numbers every platform dra
 | Card audio plays at once, follows the output, delay held | ✓ | ◐ WASAPI + drift controller | ◐ GStreamer on the card's clock |
 | Card quirks (MS2109 audio) | ? test M12 | ◐ | ✓ kernel 5.9+, warning before |
 | Keeps the display awake while playing | ✓ | ◐ | ◐ |
-| Replug: plays again by itself | ✓ | ✗ 6.5 | ✗ 6.9 |
+| Replug: plays again by itself | ✓ | ✗ 6.5 | ◐ (not run on Linux yet) |
 | Sleep and wake recovery | ✓ | ✗ 6.4 | ◐ signal watch reopens (not run on Linux yet) |
 | Signal watch: No signal, reconnect, HDCP and sound help | ✓ | ✗ 6.4 (core done) | ◐ checked on macOS, loss simulated |
 | Never a stretched picture | ✓ | ✓ letterbox | ✓ content fit |
@@ -59,10 +59,10 @@ The source is the brand kit (`plugview-design/`); the numbers every platform dra
 
 | | macOS | Windows | Linux |
 | --- | --- | --- | --- |
-| Menu bar / tray panel: status, device, resolution, settings | ✓ | ✗ 6.5 | ✗ 6.9 (KDE, Steam Deck; GNOME needs AppIndicator) |
-| Open when a card is plugged in | ✓ | ✗ 6.5 | ✗ 6.9 |
-| Closing releases the card; stays in the menu bar / tray | ✓ | ✗ 6.5 | ✗ 6.9 |
-| Launch at login | ✓ | ✗ 6.5 StartupTask | ✗ 6.9 Background portal |
+| Menu bar / tray panel: status, device, resolution, settings | ✓ | ✗ 6.5 | ◐ tray menu with the settings, no panel (KDE, Steam Deck; GNOME needs AppIndicator) |
+| Open when a card is plugged in | ✓ | ✗ 6.5 | ◐ (not run on Linux yet) |
+| Closing releases the card; stays in the menu bar / tray | ✓ | ✗ 6.5 | ✓ checked under Xvfb; quits without a tray |
+| Launch at login | ✓ | ✗ 6.5 StartupTask | ✓ XDG autostart; Background portal in Flatpak (6.10) |
 | Permissions explained before the system asks | ✓ | ✗ 6.3 camera privacy | — device access, `video` group |
 | Update check from the feed | ✓ | — Store updates (6.6) | — Flathub updates (6.10) |
 | Signed and trusted install | ✗ 3.1 Developer ID | ✗ 6.6 Microsoft Store | ✗ 6.10 Flathub |
