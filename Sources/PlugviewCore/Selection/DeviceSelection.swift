@@ -45,12 +45,13 @@ public func selectVideoDevice(from candidates: [DeviceInfo], matching query: Str
 
 /// Picks the audio input that belongs to the chosen video device.
 ///
-/// Capture cards expose video and audio as two devices; they usually share a name
-/// or model ID, and otherwise the card is the only USB audio input present.
+/// Capture cards expose video and audio as two devices; they usually share a model ID or a name, and otherwise the card
+/// is the only USB audio input present. The model ID goes first: two identical cards share names but not model IDs on
+/// Windows and Linux, where it identifies the physical device.
 public func selectAudioDevice(from candidates: [DeviceInfo], for video: DeviceInfo, matching query: String?) -> DeviceInfo? {
     if let query { return candidates.first { $0.matches(query) } }
-    if let sameName = candidates.first(where: { $0.name == video.name }) { return sameName }
     if !video.modelID.isEmpty, let sameModel = candidates.first(where: { $0.modelID == video.modelID }) { return sameModel }
+    if let sameName = candidates.first(where: { $0.name == video.name }) { return sameName }
 
     let usbCandidates = candidates.filter { $0.transport == .usb }
     if video.transport == .usb, usbCandidates.count == 1 { return usbCandidates[0] }

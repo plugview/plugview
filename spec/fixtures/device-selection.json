@@ -9,7 +9,10 @@
     "cardAudio": { "uniqueID": "AppleUSBAudioEngine:x", "name": "USB Digital Audio", "modelID": "USB Audio 345F", "transport": "usb" },
     "cardAudioSameName": { "uniqueID": "audio-same-name", "name": "USB3.0 Video", "modelID": "", "transport": "other" },
     "cardAudioSameModel": { "uniqueID": "audio-same-model", "name": "Other", "modelID": "UVC 345F:2130", "transport": "other" },
-    "usbHeadset": { "uniqueID": "headset", "name": "USB Headset", "modelID": "", "transport": "usb" }
+    "usbHeadset": { "uniqueID": "headset", "name": "USB Headset", "modelID": "", "transport": "usb" },
+    "twinCardVideo": { "uniqueID": "twin-a-video", "name": "USB Video", "modelID": "container-a", "transport": "usb" },
+    "twinCardAudio": { "uniqueID": "twin-a-audio", "name": "USB Video", "modelID": "container-a", "transport": "usb" },
+    "otherTwinAudio": { "uniqueID": "twin-b-audio", "name": "USB Video", "modelID": "container-b", "transport": "usb" }
   },
   "playableVideoDevices": [
     {
@@ -76,6 +79,13 @@
       "video": "usbCard",
       "query": null,
       "expected": "cardAudioSameName"
+    },
+    {
+      "description": "with two identical cards, the same model ID wins over the same name",
+      "candidates": ["otherTwinAudio", "twinCardAudio"],
+      "video": "twinCardVideo",
+      "query": null,
+      "expected": "twinCardAudio"
     },
     {
       "description": "pairs the audio input with the same model ID",

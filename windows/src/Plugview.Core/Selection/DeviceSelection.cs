@@ -45,14 +45,14 @@ public static class DeviceSelection
     public static DeviceInfo? SelectVideoDevice(IEnumerable<DeviceInfo> candidates, string? query) =>
         PlayableVideoDevices(candidates, query) is [var best, ..] ? best : null;
 
-    /// <summary>The audio input that belongs to <paramref name="video"/>: same name, then same model ID, then the only USB input.</summary>
+    /// <summary>The audio input that belongs to <paramref name="video"/>: same model ID (the ContainerId), then same name, then the only USB input.</summary>
     public static DeviceInfo? SelectAudioDevice(IEnumerable<DeviceInfo> candidates, DeviceInfo video, string? query)
     {
         ArgumentNullException.ThrowIfNull(video);
         var devices = candidates.ToList();
         if (query is not null) return devices.FirstOrDefault(device => device.Matches(query));
-        if (devices.FirstOrDefault(device => device.Name == video.Name) is { } sameName) return sameName;
         if (video.ModelId.Length > 0 && devices.FirstOrDefault(device => device.ModelId == video.ModelId) is { } sameModel) return sameModel;
+        if (devices.FirstOrDefault(device => device.Name == video.Name) is { } sameName) return sameName;
 
         var usbInputs = devices.Where(device => device.Transport == DeviceTransport.Usb).ToList();
         return video.Transport == DeviceTransport.Usb && usbInputs.Count == 1 ? usbInputs[0] : null;

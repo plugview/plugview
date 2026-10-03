@@ -42,19 +42,19 @@ pub fn select_video_device(candidates: &[DeviceInfo], query: Option<&str>) -> Op
     playable_video_devices(candidates, query).into_iter().next()
 }
 
-/// The audio input that belongs to `video`: same name, then same model ID, then the only USB input.
+/// The audio input that belongs to `video`: same model ID (the USB parent), then same name, then the only USB input.
 #[must_use]
 pub fn select_audio_device(candidates: &[DeviceInfo], video: &DeviceInfo, query: Option<&str>) -> Option<DeviceInfo> {
     if let Some(query) = query {
         return candidates.iter().find(|device| device.matches(query)).cloned();
     }
-    if let Some(same_name) = candidates.iter().find(|device| device.name == video.name) {
-        return Some(same_name.clone());
-    }
     if !video.model_id.is_empty() {
         if let Some(same_model) = candidates.iter().find(|device| device.model_id == video.model_id) {
             return Some(same_model.clone());
         }
+    }
+    if let Some(same_name) = candidates.iter().find(|device| device.name == video.name) {
+        return Some(same_name.clone());
     }
     let usb: Vec<&DeviceInfo> = candidates.iter().filter(|device| device.transport == DeviceTransport::Usb).collect();
     match usb.as_slice() {
