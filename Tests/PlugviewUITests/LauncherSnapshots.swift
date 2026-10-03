@@ -64,6 +64,19 @@ import Testing
         menuBar.canLaunchAtLogin = true
         menuBar.updateStatus = .available(version: "0.3.1", url: URL(filePath: "/"))
         try render(MenuBarView(launcher: launcher, controls: controls, menuBar: menuBar), to: outputDirectory.appending(path: "8-menu-bar.png"))
+
+        let notices: [(String, SignalNotice)] = [
+            ("10-no-signal", .noSignal(deviceName: "UGREEN 25773", showsHelp: false)),
+            ("10b-no-signal-help", .noSignal(deviceName: "UGREEN 25773", showsHelp: true)),
+            ("11-black-picture", .blackPicture),
+            ("12-no-game-sound", .noGameSound),
+        ]
+        for (name, notice) in notices {
+            controls.signalNotice = notice
+            try render(
+                SignalNoticeView(model: controls).frame(width: 1280, height: 720).background(Color(white: 0.35)),
+                to: outputDirectory.appending(path: "\(name).png"))
+        }
     }
 
     private func render(_ view: some View, to url: URL) throws {

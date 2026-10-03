@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let menuBar = MenuBarModel(version: plugviewVersion)
     lazy var settingsController = SettingsController(model: menuBar, settings: settings)
     var menuBarController: MenuBarController?
+    lazy var signalMonitor = SignalMonitor(capture: capture, controls: controls)
     lazy var windowController = PlayerWindowController(
         session: capture.session, launcher: launcher, controls: controls,
         onCommand: { [weak self] command in self?.perform(command) },
@@ -56,6 +57,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controls.setExpandsLimitedRange = { [weak self] isOn in self?.setExpandsLimitedRange(isOn) }
         controls.takeScreenshot = { [weak self] in self?.perform(.takeScreenshot) }
         menuBar.openWindow = { [weak self] in self?.openWindow(isPlaying: true) }
+        signalMonitor.reopen = { [weak self] in await self?.reopenPlayingCard() }
+        signalMonitor.isStarting = { [weak self] in self?.isAttaching ?? false }
         menuBar.quit = { NSApp.terminate(nil) }
     }
 
@@ -245,10 +248,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             controls.playingDeviceID = video.uniqueID
             refreshModes()
             showAttached(activeCapture, isFreshStart: isFreshStart)
+            if launchMode == .app { signalMonitor.didStart(deviceName: activeCapture.videoName, hasAudio: activeCapture.audioName != nil) }
         } catch {
             printError("\(error)")
             send(.playbackFailed(CaptureFailure(deviceName: video.name, reason: "\(error)")))
         }
+    }
+
+    /// The signal watch's reopen: starts the playing card again in place, as a mode change does.
+    private func reopenPlayingCard() async {
+        guard case .playing(let video) = launcher.state, !isAttaching else { return }
+        print("No signal from \(video.name). Reopening…")
+        await attach(video)
     }
 
     /// Restarts with sound when the card's audio input appears after its video, as it does on a replug.
@@ -323,6 +334,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         launcher.state = nextLauncherState(after: launcher.state, on: event)
         menuBarController?.update(for: launcher.state)
         if case .playing = launcher.state { return }
+        signalMonitor.stop()
         windowController.showLauncher()
     }
 

@@ -6,6 +6,14 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- When the picture stops while the card is still connected (a console changing resolution or waking up),
+  plugview says **No signal** instead of showing a frozen frame and reconnects the card by itself; after a few
+  tries it lists the console settings to check. A black picture from the start (PlayStation HDCP) or no sound from
+  the start (Dolby or surround output) shows what to change on the console. Only when opened as an app; the
+  command is unchanged.
+
 ### Fixed
 
 - Hand gestures in a game (a thumbs-up, a peace sign) could set off macOS Reactions, confetti or balloons over

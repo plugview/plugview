@@ -229,6 +229,7 @@ private final class PlayerView: NSView {
     private let launcherView: NSHostingView<LauncherView>
     private let controlsView: ControlsHostingView
     private let toastView: NSHostingView<ToastView>
+    private let signalNoticeView: SignalNoticeHostingView
     private var controlsBottom: NSLayoutConstraint?
     private let onCommand: (PlayerCommand) -> Void
     var onMouseActivity: () -> Void = {}
@@ -241,12 +242,17 @@ private final class PlayerView: NSView {
         launcherView = NSHostingView(rootView: LauncherView(model: launcher))
         controlsView = ControlsHostingView(rootView: ControlsView(model: controls))
         toastView = NSHostingView(rootView: ToastView(model: controls))
+        signalNoticeView = SignalNoticeHostingView(rootView: SignalNoticeView(model: controls))
+        signalNoticeView.controls = controls
         self.onCommand = onCommand
         super.init(frame: .zero)
         wantsLayer = true
         // Lets the preview layer take the color-range filter; it costs nothing while no filter is set.
         layerUsesCoreImageFilters = true
 
+        // Under the launcher and the controls: it covers only the video.
+        signalNoticeView.autoresizingMask = [.width, .height]
+        addSubview(signalNoticeView)
         launcherView.autoresizingMask = [.width, .height]
         addSubview(launcherView)
 
@@ -332,6 +338,7 @@ private final class PlayerView: NSView {
     override func layout() {
         super.layout()
         launcherView.frame = bounds
+        signalNoticeView.frame = bounds
     }
 
     override func updateTrackingAreas() {
@@ -381,5 +388,16 @@ private final class ControlsHostingView: NSHostingView<ControlsView> {
         guard steps != 0 else { return }
         pendingPercent -= CGFloat(steps)
         onScroll(steps)
+    }
+}
+
+/// The signal notice layer: it covers the whole video, so it lets clicks and drags through while it shows nothing.
+private final class SignalNoticeHostingView: NSHostingView<SignalNoticeView> {
+    weak var controls: ControlsModel?
+
+    override var mouseDownCanMoveWindow: Bool { true }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        controls?.signalNotice == nil ? nil : super.hitTest(point)
     }
 }

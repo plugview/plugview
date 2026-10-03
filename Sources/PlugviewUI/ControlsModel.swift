@@ -23,6 +23,8 @@ public final class ControlsModel {
     public var expandsLimitedRange = false
     /// A short message over the video, e.g. after a screenshot; it goes away on its own.
     public var toast: Toast?
+    /// What the signal watch says over the video, if anything.
+    public var signalNotice: SignalNotice?
 
     public var setVolume: (Int) -> Void = { _ in }
     public var toggleMute: () -> Void = {}
