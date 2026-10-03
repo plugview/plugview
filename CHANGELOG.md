@@ -6,6 +6,16 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-03
+
+### Added
+
+- **Install and relaunch.** When a new version is out, the menu bar panel updates plugview in place: it downloads
+  the new app from plugview.app, checks it against the release (checksum, size, version, code signature), swaps it in
+  and reopens. If anything does not check out, the app stays as it was and the panel offers the download instead.
+  Until plugview is signed with an Apple Developer ID, macOS asks for camera and microphone access again after each
+  update.
+
 ## [0.4.1] - 2026-10-03
 
 ### Fixed
@@ -145,7 +155,8 @@ First public release.
 - Capture runs at the highest scheduling priority and is marked latency-critical, which keeps App Nap
   and timer coalescing away from it.
 
-[Unreleased]: https://github.com/plugview/plugview/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/plugview/plugview/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/plugview/plugview/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/plugview/plugview/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/plugview/plugview/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/plugview/plugview/compare/v0.3.0...v0.3.1

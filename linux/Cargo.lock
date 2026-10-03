@@ -1219,7 +1219,7 @@ checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
 
 [[package]]
 name = "plugview"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "gio",
  "glib",
@@ -1234,7 +1234,7 @@ dependencies = [
 
 [[package]]
 name = "plugview-core"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "serde",
  "serde_json",
