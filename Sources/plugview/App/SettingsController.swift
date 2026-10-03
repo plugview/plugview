@@ -69,7 +69,7 @@ final class SettingsController {
         updateTask = Task { [weak self] in
             let status: UpdateStatus
             do {
-                status = try await UpdateChecker.newerRelease().map { .available(version: $0.version, url: $0.pageURL) } ?? .upToDate
+                status = try await UpdateChecker.newerRelease().map { .available(version: $0.version, url: $0.downloadURL) } ?? .upToDate
             } catch {
                 status = .failed
             }

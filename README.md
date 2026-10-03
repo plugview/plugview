@@ -75,14 +75,13 @@ brew install plugview/tap/plugview
 Both install the `plugview` command, so pick one. If both are installed, the command-only package's
 `plugview` is the one on your PATH. To switch, `brew uninstall plugview` first.
 
-**The app, downloaded:** get `plugview-macos-app.zip` from
-[Releases](https://github.com/plugview/plugview/releases/latest), unzip it, and move `plugview.app` to
-Applications.
+**The app, downloaded:** get it from [plugview.app](https://plugview.app), unzip it, and move `plugview.app`
+to Applications.
 
-**Only the command, prebuilt** from [Releases](https://github.com/plugview/plugview/releases/latest):
+**Only the command, prebuilt:**
 
 ```sh
-curl -fsSL https://github.com/plugview/plugview/releases/latest/download/plugview-macos-universal.tar.gz | tar -xz
+curl -fsSL https://plugview.app/releases/latest/plugview-macos-universal.tar.gz | tar -xz
 sudo install plugview-*/plugview /usr/local/bin/
 ```
 
@@ -154,7 +153,7 @@ the smoothest; your choice is remembered per card), and the settings:
 - **Open when a card is plugged in**: with plugview in the menu bar, plugging in a card opens the window and plays.
 - **Stay in the menu bar when closed**: closing the window releases the card (the camera light goes off) and
   plugview keeps waiting in the menu bar. Turn it off to quit when the window closes, as before.
-- **Launch at login**, and **Check for updates daily** (asks GitHub for the latest release; see
+- **Launch at login**, and **Check for updates daily** (reads plugview.app/releases/latest.json; see
   [SECURITY.md](SECURITY.md)).
 
 Typed in a terminal, plugview has no menu bar icon, always starts in the best mode, and quits when its window

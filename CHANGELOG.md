@@ -8,6 +8,8 @@ All notable changes to plugview are listed here. The format follows
 
 ### Changed
 
+- Update checks read plugview's own release feed, `https://plugview.app/releases/latest.json`, instead of
+  GitHub, and **Download** fetches the new app directly. Releases are published to plugview.app.
 - A card found by the app plays right away instead of after the 2.8 s plug-in intro (the picture is up in
   about 0.2 s). The intro now plays in a small banner over the live picture.
 - A replugged card starts once, with sound, instead of silent and then restarted: plugview waits up to a

@@ -73,14 +73,14 @@ docs/                     Performance notes and measurements
    compare links at the bottom.
 2. Set the version in `Sources/PlugviewCore/Constants.swift` and `Sources/plugview/Resources/Info.plist`
    (a test fails if they differ).
-3. Commit, then tag and push:
+3. Commit and push `main`.
+4. Run `scripts/release.sh` (a dry run: it builds, verifies, and stages the release in `.build/publish/x.y.z/`),
+   then `scripts/release.sh --publish`.
+5. Redeploy plugview-site (`./deploy.sh`) so its download links point at the new version.
 
-   ```sh
-   git tag -a vX.Y.Z -m "plugview X.Y.Z" && git push origin main vX.Y.Z
-   ```
-
-The [release workflow](.github/workflows/release.yml) checks that the tag matches the version, runs
-`make check`, builds the universal archives (the command and `plugview.app`), and publishes a GitHub Release
-whose notes come from that version's `CHANGELOG.md` section. The
-[Homebrew tap](https://github.com/plugview/homebrew-tap) updates its formula and cask automatically within a
-few hours, or right away if you run its *Update formula* workflow.
+Releases are hosted on plugview.app, not on GitHub. `--publish` uploads the versioned files to
+`https://plugview.app/releases/x.y.z/` (never overwritten), copies them to `releases/latest/` under version-free
+names, then points `releases/latest.json` at them, and finally tags `vx.y.z`. The app's update check reads
+`latest.json`; its schema is `ReleaseFeed` in `Sources/PlugviewCore/Settings/ReleaseFeed.swift`. Each release
+lists its downloads by platform, arch, and kind (`app` or `cli`), so builds for other platforms join the same
+release as more entries. It needs the `plugview` AWS profile.

@@ -1,7 +1,7 @@
 PREFIX ?= $(HOME)/.local
 VERSION := $(shell sed -n 's/^public let plugviewVersion = "\(.*\)"/\1/p' Sources/PlugviewCore/Constants.swift)
 DIST_DIR := .build/dist
-# Version-free name, so https://github.com/<owner>/plugview/releases/latest/download/<name> always works.
+# scripts/release.sh publishes these under versioned names, plus version-free copies in plugview.app/releases/latest/.
 ARCHIVE := $(DIST_DIR)/plugview-macos-universal.tar.gz
 STRICT := -Xswiftc -warnings-as-errors
 UNIVERSAL := swift build -c release --arch arm64 --arch x86_64
