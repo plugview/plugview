@@ -48,10 +48,10 @@ pub fn select_audio_device(candidates: &[DeviceInfo], video: &DeviceInfo, query:
     if let Some(query) = query {
         return candidates.iter().find(|device| device.matches(query)).cloned();
     }
-    if !video.model_id.is_empty() {
-        if let Some(same_model) = candidates.iter().find(|device| device.model_id == video.model_id) {
-            return Some(same_model.clone());
-        }
+    if !video.model_id.is_empty()
+        && let Some(same_model) = candidates.iter().find(|device| device.model_id == video.model_id)
+    {
+        return Some(same_model.clone());
     }
     if let Some(same_name) = candidates.iter().find(|device| device.name == video.name) {
         return Some(same_name.clone());

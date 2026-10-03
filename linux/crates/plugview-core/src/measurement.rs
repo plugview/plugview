@@ -33,10 +33,11 @@ pub fn latency_issues(facts: &LatencyFacts) -> Vec<LatencyIssue> {
     } else if let Some(latency) = facts.output_latency_milliseconds.filter(|latency| *latency > Tuning::SLOW_OUTPUT_LATENCY_MILLISECONDS) {
         issues.push(LatencyIssue::SlowOutput { milliseconds: rounded(latency) });
     }
-    if let Some(refresh_rate) = facts.display_refresh_rate {
-        if facts.delivered_frame_rate > 0.0 && !is_whole_multiple(refresh_rate, facts.delivered_frame_rate) {
-            issues.push(LatencyIssue::UnevenRefresh { refresh_rate: rounded(refresh_rate), frame_rate: rounded(facts.delivered_frame_rate) });
-        }
+    if let Some(refresh_rate) = facts.display_refresh_rate
+        && facts.delivered_frame_rate > 0.0
+        && !is_whole_multiple(refresh_rate, facts.delivered_frame_rate)
+    {
+        issues.push(LatencyIssue::UnevenRefresh { refresh_rate: rounded(refresh_rate), frame_rate: rounded(facts.delivered_frame_rate) });
     }
     issues
 }
