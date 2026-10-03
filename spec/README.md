@@ -7,6 +7,12 @@ fail their own checks the same way.
 
 Change behavior here first, then in every port.
 
+Also here:
+
+- [known-issues.md](known-issues.md): what goes wrong for people with capture cards on each platform, from user
+  reports, and what plugview does about each problem.
+- [hardware-test-plan.md](hardware-test-plan.md): the checks only a person with a card and a console can do.
+
 ## Fixtures
 
 Each file in `fixtures/` holds cases for one pure function of the Mac's `PlugviewCore`. A port loads the file in
