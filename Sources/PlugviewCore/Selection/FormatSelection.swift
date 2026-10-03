@@ -76,10 +76,10 @@ public struct ModeChoice: Equatable, Hashable, Sendable {
     func matches(_ mode: VideoMode) -> Bool { self == ModeChoice(mode) }
 }
 
-/// The modes worth offering in a menu: one per size and frame rate, largest and fastest first.
+/// The modes worth offering in a menu: one per size and frame rate, largest and fastest first, then widest.
 public func pickableModes(in modes: [VideoMode]) -> [ModeChoice] {
     let choices = Set(modes.filter { $0.maxFrameRate >= 1 }.map(ModeChoice.init))
-    return choices.sorted { ($0.width * $0.height, $0.frameRate) > ($1.width * $1.height, $1.frameRate) }
+    return choices.sorted { ($0.width * $0.height, $0.frameRate, $0.width) > ($1.width * $1.height, $1.frameRate, $1.width) }
 }
 
 /// Returns the index of the mode to start: the user's choice when the device still offers it, otherwise the best.

@@ -53,6 +53,14 @@
         { "width": 640, "height": 480, "maxFrameRate": 0.5, "encoding": "native" }
       ],
       "expected": ["3840x2160@30", "1920x1080@60", "1920x1080@30", "1280x720@60"]
+    },
+    {
+      "description": "the same size turned sideways lists the wider mode first",
+      "modes": [
+        { "width": 1080, "height": 1920, "maxFrameRate": 60, "encoding": "native" },
+        { "width": 1920, "height": 1080, "maxFrameRate": 60, "encoding": "native" }
+      ],
+      "expected": ["1920x1080@60", "1080x1920@60"]
     }
   ],
   "modeIndex": [
