@@ -3,7 +3,7 @@
 #
 #   plugview-windows-x64.zip, plugview-windows-arm64.zip   self-contained plugview.exe (.NET 10 SDK; NativeAOT needs a
 #                                                         Windows host, so these are single-file builds for now)
-#   plugview-linux-x86_64.tar.gz                          built in a Fedora 41 container (Docker); runs where GTK 4.16+,
+#   plugview-linux-x86_64.tar.gz                          built in a Fedora 42 container (Docker); runs where GTK 4.16+,
 #                                                         libadwaita 1.6+ and GStreamer 1.24+ are installed
 #
 # Run it before scripts/release.sh. Runs on macOS bash 3.2.
@@ -39,11 +39,12 @@ done
 
 # --- Linux ---
 
-# Fedora 41 is the oldest current release with GTK 4.16; its glibc 2.40 keeps the binary running on newer systems.
+# Fedora 42 is the oldest release with Pango 1.56 (bundled fonts) and GTK 4.18; its glibc 2.41 keeps the binary
+# running on newer systems.
 # The named volumes keep Rust and the crate cache between builds.
 docker run --rm --platform linux/amd64 -v "$ROOT":/src -w /src/linux \
   -v plugview-cargo:/root/.cargo -v plugview-rustup:/root/.rustup \
-  -e CARGO_TARGET_DIR=/src/linux/target/linux-x86_64 fedora:41 bash -c '
+  -e CARGO_TARGET_DIR=/src/linux/target/linux-x86_64 fedora:42 bash -c '
     set -e
     dnf install -y -q gcc git gtk4-devel libadwaita-devel gstreamer1-devel gstreamer1-plugins-base-devel >/dev/null
     [ -x /root/.cargo/bin/cargo ] || curl -sSf https://sh.rustup.rs | sh -s -- -y -q --profile minimal >/dev/null

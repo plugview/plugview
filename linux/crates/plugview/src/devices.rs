@@ -146,3 +146,20 @@ fn fastest_rate(value: &glib::SendValue) -> Option<gst::Fraction> {
 fn fraction_value(fraction: gst::Fraction) -> f64 {
     if fraction.denom() == 0 { 0.0 } else { f64::from(fraction.numer()) / f64::from(fraction.denom()) }
 }
+
+/// The card's audio input, waiting up to `plugview_core::Tuning::CARD_AUDIO_WAIT_SECONDS` for it to appear (spec: card audio).
+pub fn card_audio(video: &Device, query: Option<&str>) -> Option<Device> {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs_f64(plugview_core::Tuning::CARD_AUDIO_WAIT_SECONDS);
+    loop {
+        let audios = audio_inputs();
+        let infos: Vec<_> = audios.iter().map(|device| device.info.clone()).collect();
+        if let Some(selected) = plugview_core::select_audio_device(&infos, &video.info, query) {
+            return audios.into_iter().find(|device| device.info == selected);
+        }
+        if std::time::Instant::now() >= deadline {
+            eprintln!("plugview: no audio input matched {}; playing without sound. Run 'plugview --list' and pass '--audio <name>'.", video.info.name);
+            return None;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+}

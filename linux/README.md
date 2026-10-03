@@ -7,12 +7,13 @@ Work in progress (phase 6 in `plugview-product/PHASES.md`). What exists:
 | `crates/plugview-core` | The shared decisions, tested against `spec/fixtures` |
 | `crates/plugview` | The app: sysfs device classification, GStreamer pipelines into a GTK 4 window (graphics offload), card audio, `--list` and `--measure` (the phase 6.7 latency spike) |
 
-Needs GTK 4.16+, libadwaita 1.6+ and GStreamer 1.24+ with their development files, and Rust 1.92+:
+Needs GTK 4.16+, libadwaita 1.6+, Pango 1.56+ and GStreamer 1.24+ with their development files, and Rust 1.92+
+(Fedora 42, Ubuntu 25.04, Debian 13, Arch or newer):
 
 ```sh
 # Fedora
 sudo dnf install gcc gtk4-devel libadwaita-devel gstreamer1-devel gstreamer1-plugins-base-devel gstreamer1-plugins-good gstreamer1-plugins-bad-free
-# Ubuntu 25.04 or later, Debian 13
+# Ubuntu 25.04 or later, Debian 13 or later
 sudo apt install build-essential libgtk-4-dev libadwaita-1-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good gstreamer1.0-plugins-bad
 # macOS (development only: AVFoundation stands in for V4L2)
 brew install gtk4 libadwaita gstreamer

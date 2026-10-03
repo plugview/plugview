@@ -1,0 +1,231 @@
+/* plugview's look on Linux, from the brand kit. Colors are @pv_* variables defined from spec/fixtures/brand.json;
+   no color is written here by hand. Sizes follow the Mac app (Sources/PlugviewUI). */
+
+window.plugview {
+  background: @pv_cathode;
+  color: @pv_bone;
+  font-family: "Geist", sans-serif;
+}
+
+/* The launcher: a CRT surface with a warm glow at its center. */
+.launcher {
+  background: radial-gradient(circle at 50% 40%, @pv_glow 0%, @pv_surface 700px);
+}
+
+.launcher-title {
+  font-family: "Geist Mono", monospace;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 2.8px;
+  color: @pv_signal;
+  text-shadow: 0 0 6px alpha(@pv_signal, 0.5);
+}
+
+.launcher-title.error {
+  color: @pv_tally;
+  text-shadow: 0 0 6px alpha(@pv_tally, 0.5);
+}
+
+.launcher-message {
+  font-size: 15px;
+  color: @pv_muted;
+}
+
+/* Buttons: amber primary or outlined, in Geist Mono. */
+button.brand {
+  font-family: "Geist Mono", monospace;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 11px 18px;
+  border-radius: 9px;
+  border: 1px solid @pv_line;
+  background: transparent;
+  color: @pv_bone;
+  box-shadow: none;
+  transition: background 180ms ease-out, box-shadow 180ms ease-out;
+}
+
+button.brand:hover {
+  background: alpha(white, 0.06);
+}
+
+button.brand.primary {
+  background: @pv_signal;
+  color: @pv_cathode;
+  border-color: transparent;
+  box-shadow: 0 0 8px alpha(@pv_signal, 0.2);
+}
+
+button.brand.primary:hover {
+  box-shadow: 0 0 14px alpha(@pv_signal, 0.45);
+}
+
+button.brand:active {
+  opacity: 0.85;
+}
+
+/* A found card. */
+.device-row {
+  background: @pv_raised;
+  border: 1px solid @pv_line;
+  border-radius: 10px;
+  padding: 12px 14px;
+  min-width: 340px;
+  transition: background 180ms ease-out, border-color 180ms ease-out;
+}
+
+button.device-row:hover {
+  background: alpha(@pv_signal, 0.08);
+  border-color: alpha(@pv_signal, 0.5);
+}
+
+.device-dot {
+  background: @pv_ok;
+  border-radius: 4px;
+  min-width: 8px;
+  min-height: 8px;
+  box-shadow: 0 0 4px @pv_ok;
+}
+
+.device-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: @pv_bone;
+}
+
+.device-details {
+  font-family: "Geist Mono", monospace;
+  font-weight: 500;
+  font-size: 12px;
+  color: @pv_muted;
+}
+
+/* Floating glass over the video: the controls bar, toasts and notices. */
+.glass {
+  background: alpha(@pv_cathode, 0.78);
+  border: 1px solid alpha(white, 0.1);
+  box-shadow: 0 6px 16px alpha(black, 0.35);
+  color: @pv_bone;
+}
+
+.controls-bar {
+  border-radius: 14px;
+  padding: 5px;
+  font-family: "Geist Mono", monospace;
+  font-size: 12px;
+}
+
+.controls-bar button,
+.controls-bar menubutton > button {
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
+  border-radius: 9px;
+  background: transparent;
+  color: @pv_bone;
+  box-shadow: none;
+  border: none;
+}
+
+.controls-bar button:hover,
+.controls-bar menubutton > button:hover {
+  background: alpha(white, 0.1);
+}
+
+.controls-bar scale {
+  min-width: 110px;
+}
+
+.controls-bar scale trough {
+  background: alpha(white, 0.15);
+  min-height: 4px;
+  border-radius: 2px;
+}
+
+.controls-bar scale highlight {
+  background: @pv_bone;
+  border-radius: 2px;
+}
+
+.controls-bar scale slider {
+  background: @pv_bone;
+  min-width: 12px;
+  min-height: 12px;
+  border-radius: 6px;
+  box-shadow: none;
+  border: none;
+}
+
+.toast {
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.toast image.warning {
+  color: @pv_signal;
+}
+
+.toast image.ok {
+  color: @pv_ok;
+}
+
+.notice {
+  border-radius: 14px;
+  padding: 22px;
+}
+
+.notice-cover {
+  background: alpha(@pv_cathode, 0.92);
+}
+
+.notice-title {
+  font-family: "Geist Mono", monospace;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  color: @pv_signal;
+}
+
+.notice-message {
+  font-size: 15px;
+  color: @pv_bone;
+}
+
+.notice-line {
+  font-size: 13px;
+  color: @pv_muted;
+}
+
+.notice-bullet {
+  background: @pv_signal;
+  min-width: 5px;
+  min-height: 5px;
+  border-radius: 3px;
+}
+
+popover.mode-picker contents {
+  background: @pv_raised;
+  border: 1px solid @pv_line;
+  border-radius: 12px;
+  color: @pv_bone;
+}
+
+.mode-picker .mode-row {
+  font-family: "Geist Mono", monospace;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: transparent;
+  color: @pv_bone;
+  border: none;
+  box-shadow: none;
+}
+
+.mode-picker .mode-row:hover {
+  background: alpha(white, 0.08);
+}
+
+.mode-picker .mode-row.selected {
+  color: @pv_signal;
+}

@@ -1,14 +1,17 @@
 //! plugview for Linux: the command (`--list`, `--measure`) and the player window (phase 6.7 latency spike).
 
+mod app;
+mod brand;
 mod devices;
 mod measure;
 mod pipeline;
-mod player;
+mod settings;
 mod sysfs;
+mod ui;
 
 use std::process::ExitCode;
 
-use plugview_core::{Command, PLUGVIEW_VERSION, RunOptions, Tuning, pickable_modes, select_audio_device, select_video_device};
+use plugview_core::{Command, PLUGVIEW_VERSION, RunOptions, pickable_modes, select_video_device};
 
 /// sysexits.h `EX_USAGE`, as on the Mac (spec: "Command").
 const USAGE_EXIT_CODE: u8 = 64;
@@ -61,8 +64,8 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         Command::ListDevices => with_gstreamer(list),
-        Command::Measure(options) => with_gstreamer(|| play_or_measure(&options, true)),
-        Command::Run(options) => with_gstreamer(|| play_or_measure(&options, false)),
+        Command::Measure(options) => with_gstreamer(|| measure_card(&options)),
+        Command::Run(options) => with_gstreamer(|| app::run(options)),
     }
 }
 
@@ -105,7 +108,7 @@ fn list() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn play_or_measure(options: &RunOptions, is_measuring: bool) -> ExitCode {
+fn measure_card(options: &RunOptions) -> ExitCode {
     let videos = devices::video_devices();
     let infos: Vec<_> = videos.iter().map(|device| device.info.clone()).collect();
     let Some(selected) = select_video_device(&infos, options.video_query.as_deref()) else {
@@ -120,25 +123,8 @@ fn play_or_measure(options: &RunOptions, is_measuring: bool) -> ExitCode {
         return ExitCode::FAILURE;
     };
     warn_about_old_kernel_quirks(video);
-    let audio = if options.is_audio_enabled { card_audio(video, options) } else { None };
-    if is_measuring { measure::run(video, mode, audio.as_ref()) } else { player::run(video, mode, audio.as_ref(), options) }
-}
-
-/// The card's audio input, waiting up to `Tuning::CARD_AUDIO_WAIT_SECONDS` for it to appear (spec: card audio).
-fn card_audio(video: &devices::Device, options: &RunOptions) -> Option<devices::Device> {
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs_f64(Tuning::CARD_AUDIO_WAIT_SECONDS);
-    loop {
-        let audios = devices::audio_inputs();
-        let infos: Vec<_> = audios.iter().map(|device| device.info.clone()).collect();
-        if let Some(selected) = select_audio_device(&infos, &video.info, options.audio_query.as_deref()) {
-            return audios.into_iter().find(|device| device.info == selected);
-        }
-        if std::time::Instant::now() >= deadline {
-            eprintln!("plugview: no audio input matched {}; playing without sound. Run 'plugview --list' and pass '--audio <name>'.", video.info.name);
-            return None;
-        }
-        std::thread::sleep(std::time::Duration::from_millis(50));
-    }
+    let audio = if options.is_audio_enabled { devices::card_audio(video, options.audio_query.as_deref()) } else { None };
+    measure::run(video, mode, audio.as_ref())
 }
 
 /// The transport's case name, as the Mac prints it.
