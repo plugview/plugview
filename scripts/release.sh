@@ -10,6 +10,9 @@
 #   releases/latest.json                                                  copy of the newest release.json
 #   releases/latest/plugview-<platform>-<arch>[-app].<ext>                version-free copies, for links and curl
 #
+# Windows and Linux previews (scripts/build-previews.sh) join the release when they are in .build/dist/.
+# TAG_REMOTE=none tags locally without pushing.
+#
 # release.json lists one artifact per platform/arch/kind, so Windows and Linux builds join the same release later.
 # Its schema is ReleaseFeed (Sources/PlugviewCore/Settings/ReleaseFeed.swift); the app reads latest.json.
 #
@@ -82,7 +85,28 @@ APP_FILE="plugview-$VERSION-macos-universal-app.zip"
 COMMAND_FILE="plugview-$VERSION-macos-universal.tar.gz"
 cp "$DIST/plugview-macos-app.zip" "$STAGE/$APP_FILE"
 cp "$DIST/plugview-macos-universal.tar.gz" "$STAGE/$COMMAND_FILE"
-(cd "$STAGE" && shasum -a 256 "$APP_FILE" "$COMMAND_FILE" >SHA256SUMS)
+
+# Windows and Linux previews join the release when scripts/build-previews.sh made them for this version.
+# Each entry: platform arch kind extension minimum-OS.
+PREVIEWS="windows x64 app zip 10.0.19041
+windows arm64 app zip 10.0.19041
+linux x86_64 app tar.gz gtk-4.16"
+PREVIEW_FILES=""
+while read -r platform arch kind extension minimum; do
+  built="$DIST/plugview-$platform-$arch.$extension"
+  [[ -f "$built" ]] || continue
+  case "$extension" in
+    zip) unzip -l "$built" | grep -q "plugview-$VERSION/plugview.exe" || fail "$built is not a $VERSION build" ;;
+    tar.gz) tar -tzf "$built" | grep -q "plugview-$VERSION/plugview$" || fail "$built is not a $VERSION build" ;;
+  esac
+  file="plugview-$VERSION-$platform-$arch.$extension"
+  cp "$built" "$STAGE/$file"
+  PREVIEW_FILES="$PREVIEW_FILES $platform:$arch:$kind:$file:$minimum"
+done <<EOF_PREVIEWS
+$PREVIEWS
+EOF_PREVIEWS
+
+(cd "$STAGE" && shasum -a 256 ./*.zip ./*.tar.gz | sed 's# \./# #' >SHA256SUMS)
 
 awk -v heading="## [$VERSION]" '
   index($0, heading) == 1 { found = 1; next }
@@ -90,18 +114,25 @@ awk -v heading="## [$VERSION]" '
   found { print }
 ' CHANGELOG.md >"$STAGE/notes.md"
 
-# One JSON object per artifact: platform, arch, kind, file.
+# One JSON object per artifact: platform, arch, kind, file, minimum OS, and whether it is a preview.
 artifact_json() {
   local file="$STAGE/$4"
-  printf '    {"platform": "%s", "arch": "%s", "kind": "%s", "url": "%s", "sha256": "%s", "size": %s, "minimumOSVersion": "%s"}' \
-    "$1" "$2" "$3" "$BASE_URL/$4" "$(shasum -a 256 "$file" | cut -d' ' -f1)" "$(stat -f %z "$file")" "$MINIMUM_MACOS"
+  printf '    {"platform": "%s", "arch": "%s", "kind": "%s", "url": "%s", "sha256": "%s", "size": %s, "minimumOSVersion": "%s", "isPreview": %s}' \
+    "$1" "$2" "$3" "$BASE_URL/$4" "$(shasum -a 256 "$file" | cut -d' ' -f1)" "$(stat -f %z "$file")" "$5" "$6"
 }
 {
   printf '{\n  "schemaVersion": 1,\n  "version": "%s",\n  "releasedAt": "%s",\n  "notesUrl": "%s",\n  "artifacts": [\n' \
     "$VERSION" "$RELEASE_DATE" "$BASE_URL/notes.md"
-  artifact_json macos universal app "$APP_FILE"
+  artifact_json macos universal app "$APP_FILE" "$MINIMUM_MACOS" false
   printf ',\n'
-  artifact_json macos universal cli "$COMMAND_FILE"
+  artifact_json macos universal cli "$COMMAND_FILE" "$MINIMUM_MACOS" false
+  for preview in $PREVIEW_FILES; do
+    IFS=: read -r platform arch kind file minimum <<EOF_PREVIEW
+$preview
+EOF_PREVIEW
+    printf ',\n'
+    artifact_json "$platform" "$arch" "$kind" "$file" "$minimum" true
+  done
   printf '\n  ]\n}\n'
 } >"$STAGE/release.json"
 python3 -m json.tool "$STAGE/release.json" >/dev/null || fail "release.json is not valid JSON"
@@ -135,20 +166,33 @@ upload() { # file, key, content type, cache control
 IMMUTABLE='public, max-age=31536000, immutable'
 upload "$STAGE/$APP_FILE" "releases/$VERSION/$APP_FILE" application/zip "$IMMUTABLE"
 upload "$STAGE/$COMMAND_FILE" "releases/$VERSION/$COMMAND_FILE" application/gzip "$IMMUTABLE"
+for preview in $PREVIEW_FILES; do
+  file="$(echo "$preview" | cut -d: -f4)"
+  case "$file" in *.zip) type=application/zip ;; *) type=application/gzip ;; esac
+  upload "$STAGE/$file" "releases/$VERSION/$file" "$type" "$IMMUTABLE"
+done
 upload "$STAGE/SHA256SUMS" "releases/$VERSION/SHA256SUMS" 'text/plain; charset=utf-8' "$IMMUTABLE"
 upload "$STAGE/notes.md" "releases/$VERSION/notes.md" 'text/markdown; charset=utf-8' "$IMMUTABLE"
 upload "$STAGE/release.json" "releases/$VERSION/release.json" application/json "$IMMUTABLE"
 LATEST='public, max-age=300'
 upload "$STAGE/$APP_FILE" releases/latest/plugview-macos-universal-app.zip application/zip "$LATEST"
 upload "$STAGE/$COMMAND_FILE" releases/latest/plugview-macos-universal.tar.gz application/gzip "$LATEST"
+for preview in $PREVIEW_FILES; do
+  file="$(echo "$preview" | cut -d: -f4)"
+  case "$file" in *.zip) type=application/zip ;; *) type=application/gzip ;; esac
+  upload "$STAGE/$file" "releases/latest/${file/plugview-$VERSION-/plugview-}" "$type" "$LATEST"
+done
 # Last, so the feed never points at files that are not there yet.
 upload "$STAGE/release.json" releases/latest.json application/json "$LATEST"
 aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths '/releases/latest.json' '/releases/latest/*' \
   --query 'Invalidation.Id' --output text >/dev/null
 
 git tag -a "v$VERSION" -m "plugview $VERSION"
-# The keychain may hold a stale CodeCommit password that would answer first; use the AWS helper only.
-git -c credential.helper= -c 'credential.helper=!aws codecommit credential-helper $@' push "$TAG_REMOTE" "v$VERSION"
+# TAG_REMOTE=none keeps the tag local (the owner pushes when ready).
+if [[ "$TAG_REMOTE" != none ]]; then
+  # The keychain may hold a stale CodeCommit password that would answer first; use the AWS helper only.
+  git -c credential.helper= -c 'credential.helper=!aws codecommit credential-helper $@' push "$TAG_REMOTE" "v$VERSION"
+fi
 
 echo
 echo "Published $SITE/releases/latest.json -> $VERSION"
