@@ -25,8 +25,9 @@ public static class CardAudioQuirks
     /// <summary>
     /// Reads MS2109 samples (declared 96 kHz mono) as 48 kHz stereo frames, left first, into <paramref name="stereo"/>.
     /// </summary>
+    /// <remarks>Works on 16-bit samples and on the float samples Windows' shared mode delivers alike.</remarks>
     /// <returns>The number of stereo frames written: half the samples, rounded down; an odd last sample is left for the next call.</returns>
-    public static int ReadMs2109(ReadOnlySpan<short> declaredMono, Span<short> stereo)
+    public static int ReadMs2109<TSample>(ReadOnlySpan<TSample> declaredMono, Span<TSample> stereo) where TSample : unmanaged
     {
         var frames = declaredMono.Length / 2;
         if (stereo.Length < frames * 2) throw new ArgumentException("The output holds fewer samples than the input.", nameof(stereo));

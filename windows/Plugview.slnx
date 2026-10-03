@@ -1,8 +1,11 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Plugview.Core/Plugview.Core.csproj" />
+    <Project Path="src/Plugview.Windows/Plugview.Windows.csproj" />
+    <Project Path="src/Plugview.Cli/Plugview.Cli.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Plugview.Core.Tests/Plugview.Core.Tests.csproj" />
+    <Project Path="tests/Plugview.Windows.Tests/Plugview.Windows.Tests.csproj" />
   </Folder>
 </Solution>
