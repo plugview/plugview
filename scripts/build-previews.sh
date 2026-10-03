@@ -5,6 +5,8 @@
 #                                                         Windows host, so these are single-file builds for now)
 #   plugview-linux-x86_64.tar.gz                          built in a Fedora 42 container (Docker); runs where GTK 4.16+,
 #                                                         libadwaita 1.6+ and GStreamer 1.24+ are installed
+#   plugview-linux-x86_64.flatpak                         the same app as a Flatpak bundle on the GNOME 51 runtime
+#                                                         (linux/flatpak), built in a privileged Fedora 42 container
 #
 # Run it before scripts/release.sh. Runs on macOS bash 3.2.
 set -euo pipefail
@@ -61,3 +63,11 @@ cp linux/data/install.sh linux/data/app.plugview.plugview.desktop linux/data/app
 # No macOS extended attributes: GNU tar on Linux would warn about each one.
 COPYFILE_DISABLE=1 tar --no-xattrs --no-mac-metadata -czf "$DIST/plugview-linux-x86_64.tar.gz" -C "$WORK/linux-x86_64" "plugview-$VERSION"
 echo "$DIST/plugview-linux-x86_64.tar.gz"
+
+# Flathub's runtimes and SDKs stay in the named volume between builds. The container runs natively (arm64 on Apple
+# silicon): bubblewrap does not work under emulation, so flatpak-builder cross-builds x86_64 through binfmt.
+docker run --rm --privileged --platform "linux/$(uname -m | sed 's/x86_64/amd64/')" -v "$ROOT":/src -v plugview-flatpak:/var/lib/flatpak \
+  -e FLATPAK_ARCH=x86_64 -v "$ROOT/$DIST":/out fedora:42 bash /src/linux/scripts/flatpak.sh >"$WORK/flatpak.log" 2>&1 \
+  || fail "the Flatpak build failed; see $WORK/flatpak.log"
+[[ "$(cat "$DIST/plugview-linux-x86_64.flatpak.version")" == "$VERSION" ]] || fail "the Flatpak reports another version"
+echo "$DIST/plugview-linux-x86_64.flatpak"

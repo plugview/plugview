@@ -30,6 +30,22 @@ see or change. Everything between the driver and the compositor is tuned below.
 
 The buffer and scheduling changes apply to plugview's process only, and macOS undoes them when plugview exits.
 
+## Windows and Linux
+
+The previews follow the same rules with each system's own path. Their effect is not measured on Windows or Linux
+hardware yet; numbers will land here as they are.
+
+| | Windows | Linux |
+| --- | --- | --- |
+| Video | Media Foundation source reader → Direct3D 11 video processor → flip-model swap chain | `v4l2src` (dmabuf when the card allows) → `gtk4paintablesink` in GTK's graphics offload, the video on its own subsurface |
+| Compressed cards | Media Foundation's decoder | `vajpegdec` (VA-API) when the system has it, else `jpegdec` |
+| Sound | WASAPI, with drift correction against the card's clock (tested over 2 h at ±300 ppm in the core tests) | PipeWire or PulseAudio on the card's clock, 20 ms buffers |
+| Signal watch | in the shared core, not yet wired to the window | one frame every 0.5 s through a pad probe, sound level from a `level` element |
+
+The Linux pipeline was measured once on a Mac through AVFoundation (GStreamer's macOS source standing in for V4L2,
+UGREEN 25773): 60 fps, capture → app 17.4 ms median, audio 11.5 ms, close to the Mac app's 17–23 ms. The Flatpak
+adds no step to that path: it reads `/run/udev` to list cards and watches `/dev` for cards being plugged in.
+
 ## Measure your setup
 
 ```sh

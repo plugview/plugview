@@ -4,7 +4,7 @@ namespace Plugview.Core;
 public static class Tuning
 {
     /// <summary>The released version; the same number on every platform (the Mac's <c>Constants.swift</c> is the source).</summary>
-    public const string PlugviewVersion = "0.4.3";
+    public const string PlugviewVersion = "0.4.4";
 
     /// <summary>Frame rate at which motion counts as smooth for gaming.</summary>
     public const double SmoothFrameRate = 50;

@@ -10,7 +10,8 @@
 #   releases/latest.json                                                  copy of the newest release.json
 #   releases/latest/plugview-<platform>-<arch>[-app].<ext>                version-free copies, for links and curl
 #
-# Windows and Linux previews (scripts/build-previews.sh) join the release when they are in .build/dist/.
+# Windows and Linux previews (scripts/build-previews.sh) join the release when they are in .build/dist/, and so does
+# the source of the release (git archive), for Flathub and for anyone who cannot reach GitHub.
 # TAG_REMOTE=none tags locally without pushing.
 #
 # release.json lists one artifact per platform/arch/kind, so Windows and Linux builds join the same release later.
@@ -42,6 +43,7 @@ VERSION="$(make -s version)"
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "version '$VERSION' in Constants.swift is not x.y.z"
 RELEASE_DATE="$(sed -n "s/^## \[$VERSION\] - \([0-9-]*\)$/\1/p" CHANGELOG.md)"
 [[ -n "$RELEASE_DATE" ]] || fail "CHANGELOG.md has no '## [$VERSION] - YYYY-MM-DD' section"
+grep -q "<release version=\"$VERSION\"" linux/data/app.plugview.plugview.metainfo.xml || fail "the Linux metainfo has no $VERSION release"
 MINIMUM_MACOS="$(/usr/libexec/PlistBuddy -c 'Print LSMinimumSystemVersion' Sources/plugview/Resources/Info.plist)"
 
 if $IS_PUBLISHING; then
@@ -90,7 +92,8 @@ cp "$DIST/plugview-macos-universal.tar.gz" "$STAGE/$COMMAND_FILE"
 # Each entry: platform arch kind extension minimum-OS.
 PREVIEWS="windows x64 app zip 10.0.19041
 windows arm64 app zip 10.0.19041
-linux x86_64 app tar.gz gtk-4.16"
+linux x86_64 app tar.gz gtk-4.16
+linux x86_64 flatpak flatpak org.gnome.Platform-51"
 PREVIEW_FILES=""
 while read -r platform arch kind extension minimum; do
   built="$DIST/plugview-$platform-$arch.$extension"
@@ -99,6 +102,8 @@ while read -r platform arch kind extension minimum; do
   case "$extension" in
     zip) listing="$(unzip -l "$built")" && expected="plugview-$VERSION/plugview.exe" ;;
     tar.gz) listing="$(tar -tzf "$built")" && expected="plugview-$VERSION/plugview" ;;
+    # build-previews.sh ran the bundle's plugview --version and wrote the answer next to it.
+    flatpak) listing="$(cat "$built.version" 2>/dev/null || true)" && expected="$VERSION" ;;
   esac
   grep -qx ".* *$expected" <<<"$listing" || grep -qx "$expected" <<<"$listing" || fail "$built is not a $VERSION build"
   file="plugview-$VERSION-$platform-$arch.$extension"
@@ -108,7 +113,10 @@ done <<EOF_PREVIEWS
 $PREVIEWS
 EOF_PREVIEWS
 
-(cd "$STAGE" && shasum -a 256 ./*.zip ./*.tar.gz | sed 's# \./# #' >SHA256SUMS)
+SOURCE_FILE="plugview-$VERSION-source.tar.gz"
+git archive --format=tar.gz --prefix="plugview-$VERSION/" -o "$STAGE/$SOURCE_FILE" HEAD
+
+(cd "$STAGE" && shasum -a 256 ./*.zip ./*.tar.gz ./*.flatpak 2>/dev/null | sed 's# \./# #' >SHA256SUMS)
 
 awk -v heading="## [$VERSION]" '
   index($0, heading) == 1 { found = 1; next }
@@ -128,6 +136,8 @@ artifact_json() {
   artifact_json macos universal app "$APP_FILE" "$MINIMUM_MACOS" false
   printf ',\n'
   artifact_json macos universal cli "$COMMAND_FILE" "$MINIMUM_MACOS" false
+  printf ',\n'
+  artifact_json source any source "$SOURCE_FILE" "" false
   for preview in $PREVIEW_FILES; do
     IFS=: read -r platform arch kind file minimum <<EOF_PREVIEW
 $preview
@@ -168,9 +178,11 @@ upload() { # file, key, content type, cache control
 IMMUTABLE='public, max-age=31536000, immutable'
 upload "$STAGE/$APP_FILE" "releases/$VERSION/$APP_FILE" application/zip "$IMMUTABLE"
 upload "$STAGE/$COMMAND_FILE" "releases/$VERSION/$COMMAND_FILE" application/gzip "$IMMUTABLE"
+upload "$STAGE/$SOURCE_FILE" "releases/$VERSION/$SOURCE_FILE" application/gzip "$IMMUTABLE"
+content_type() { case "$1" in *.zip) echo application/zip ;; *.flatpak) echo application/vnd.flatpak ;; *) echo application/gzip ;; esac; }
 for preview in $PREVIEW_FILES; do
   file="$(echo "$preview" | cut -d: -f4)"
-  case "$file" in *.zip) type=application/zip ;; *) type=application/gzip ;; esac
+  type="$(content_type "$file")"
   upload "$STAGE/$file" "releases/$VERSION/$file" "$type" "$IMMUTABLE"
 done
 upload "$STAGE/SHA256SUMS" "releases/$VERSION/SHA256SUMS" 'text/plain; charset=utf-8' "$IMMUTABLE"
@@ -181,7 +193,7 @@ upload "$STAGE/$APP_FILE" releases/latest/plugview-macos-universal-app.zip appli
 upload "$STAGE/$COMMAND_FILE" releases/latest/plugview-macos-universal.tar.gz application/gzip "$LATEST"
 for preview in $PREVIEW_FILES; do
   file="$(echo "$preview" | cut -d: -f4)"
-  case "$file" in *.zip) type=application/zip ;; *) type=application/gzip ;; esac
+  type="$(content_type "$file")"
   upload "$STAGE/$file" "releases/latest/${file/plugview-$VERSION-/plugview-}" "$type" "$LATEST"
 done
 # Last, so the feed never points at files that are not there yet.

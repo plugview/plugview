@@ -1,0 +1,52 @@
+# plugview for Linux as a Flatpak. Built by scripts/build-previews.sh into plugview-linux-x86_64.flatpak; by hand:
+#   flatpak-builder --user --install-deps-from=flathub --force-clean build linux/flatpak/app.plugview.plugview.yml
+# cargo-sources.json pins every crate in linux/Cargo.lock for the offline build; regenerate it when the lock changes:
+#   flatpak-cargo-generator.py linux/Cargo.lock -o linux/flatpak/cargo-sources.json   (flatpak/flatpak-builder-tools)
+id: app.plugview.plugview
+runtime: org.gnome.Platform
+runtime-version: '51'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: plugview
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  # Capture cards are V4L2 nodes (/dev/video*), and plugged in at any time; also the GPU for decoding and display.
+  - --device=all
+  # GStreamer lists V4L2 devices through udev's database; without it the app sees no card.
+  - --filesystem=/run/udev:ro
+  # The card's sound, played through PipeWire's PulseAudio service.
+  - --socket=pulseaudio
+  # Screenshots go to Pictures/plugview, nowhere else.
+  - --filesystem=xdg-pictures/plugview:create
+  # The tray icon (StatusNotifierItem).
+  - --talk-name=org.kde.StatusNotifierWatcher
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/plugview/cargo
+modules:
+  - name: plugview
+    buildsystem: simple
+    subdir: linux
+    build-commands:
+      - cargo --offline fetch --manifest-path Cargo.toml
+      - cargo --offline build --release --locked
+      - install -Dm755 target/release/plugview /app/bin/plugview
+      - install -Dm644 data/app.plugview.plugview.desktop -t /app/share/applications
+      - install -Dm644 data/app.plugview.plugview.svg -t /app/share/icons/hicolor/scalable/apps
+      - install -Dm644 data/app.plugview.plugview.metainfo.xml -t /app/share/metainfo
+    sources:
+      # The whole repository: the build also embeds spec/fixtures/brand.json and the Geist fonts from Sources/.
+      - type: dir
+        path: ../..
+        skip:
+          - .build
+          - .codegraph
+          - .git
+          - .swiftpm
+          - linux/target
+          - windows
+      - cargo-sources.json

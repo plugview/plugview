@@ -9,7 +9,15 @@ A preview (phase 6 in `plugview-product/PHASES.md`): the same app as on the Mac,
 
 ## Install the preview
 
-From `plugview-linux-x86_64.tar.gz` on plugview.app:
+As a Flatpak (any distribution with Flatpak and Flathub, the Steam Deck included), from
+`plugview-linux-x86_64.flatpak` on plugview.app:
+
+```sh
+flatpak install --user plugview-linux-x86_64.flatpak
+flatpak run app.plugview.plugview --list   # the command; the app is in the app grid
+```
+
+Or from `plugview-linux-x86_64.tar.gz`:
 
 ```sh
 tar xzf plugview-linux-x86_64.tar.gz && cd plugview-*/ && ./install.sh
@@ -48,6 +56,11 @@ Window checks without a Linux PC (native arm64 Fedora 42 under Xvfb; results lan
 docker run --rm --platform linux/arm64 -v "$PWD/..":/src -v "$PWD/target/ui-check":/out fedora:42 bash /src/linux/scripts/keys.sh
 docker run --rm --platform linux/arm64 -v "$PWD/..":/src -v "$PWD/target/ui-check":/out fedora:42 bash /src/linux/scripts/tray.sh
 ```
+
+The Flatpak (`flatpak/app.plugview.plugview.yml`; `scripts/flatpak.sh` builds it, `scripts/flatpak-check.sh` runs it
+against the kernel's virtual capture device, `vivid`) has two sandbox details: it reads `/run/udev` because GStreamer
+lists V4L2 devices through udev, and it watches `/dev` for cards being plugged in because udev's events do not reach
+the sandbox.
 
 `keys.sh` checks the volume, mute and zoom keys (`keys.log`, `geometry.txt`); `tray.sh` runs a stub tray host
 (`watcher.py`) and checks the menu, closing to the tray, a second launch, launch at login, Quit, and quitting

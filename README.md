@@ -12,7 +12,7 @@ Plug in a capture card, open plugview (or type `plugview`), play.
 
 A tiny, open-source macOS app and command that shows your HDMI capture device (Nintendo Switch, PlayStation,
 Xbox, Steam Deck, camera, …) in a resizable window with sound, as fast as the Mac can draw it. No scenes, no
-sources, no streaming setup.
+sources, no streaming setup. Windows and Linux (the Steam Deck included) have previews.
 
 <p align="center"><img src="docs/images/playing.png" width="860" alt="plugview playing a pixel-art rooftop tennis game at 1080p60 through a UGREEN 25773 capture card, with the controls bar showing volume, screenshot, resolution and full screen"></p>
 <p align="center"><sub>A real capture through a UGREEN 25773. The game is Rooftop Rally, our own pixel-art test scene.</sub></p>
@@ -95,6 +95,18 @@ git clone https://github.com/plugview/plugview.git && cd plugview
 make install            # installs to ~/.local/bin; use `sudo make install PREFIX=/usr/local` for all users
 make app                # builds .build/dist/plugview.app
 ```
+
+### Windows and Linux (previews)
+
+| System | Download | Notes |
+| --- | --- | --- |
+| Windows 10 2004+ and 11, x64 or Arm | [x64](https://plugview.app/releases/latest/plugview-windows-x64.zip), [Arm](https://plugview.app/releases/latest/plugview-windows-arm64.zip) | Unzip, run `plugview.exe`: the window and the command. Not signed yet. See [`windows/`](windows/README.md). |
+| Linux x86-64 with Flatpak, the Steam Deck included | [plugview-linux-x86_64.flatpak](https://plugview.app/releases/latest/plugview-linux-x86_64.flatpak) | `flatpak install --user plugview-linux-x86_64.flatpak`; the command is `flatpak run app.plugview.plugview`. |
+| Linux x86-64 with GTK 4.16+ and GStreamer 1.24+ | [plugview-linux-x86_64.tar.gz](https://plugview.app/releases/latest/plugview-linux-x86_64.tar.gz) | Unpack, run `./install.sh`: the app with its tray, and the command. See [`linux/`](linux/README.md). |
+
+The Linux app has the Mac's launcher, controls, screenshots, signal watch and a tray icon; the Windows preview is
+a plain window with keys for now. Neither has been run on its own hardware with a capture card yet: reports are
+welcome. The source of each release is at `https://plugview.app/releases/<version>/plugview-<version>-source.tar.gz`.
 
 ### Not notarized yet
 

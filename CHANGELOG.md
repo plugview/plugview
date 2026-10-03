@@ -6,6 +6,19 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-10-03
+
+### Added
+
+- **plugview for Linux as a Flatpak.** `plugview-linux-x86_64.flatpak` on plugview.app installs the app on the GNOME
+  runtime from Flathub, with only the access it needs: video devices, sound, Pictures/plugview for screenshots and the
+  tray. It is the easiest way onto the Steam Deck. From a terminal: `flatpak run app.plugview.plugview --list`.
+- The source of each release is published next to it on plugview.app.
+
+### Changed
+
+- Nothing changes on the Mac or Windows in this release; the version moves with the Linux preview.
+
 ## [0.4.3] - 2026-10-03
 
 ### Added

@@ -116,6 +116,8 @@ struct State {
     is_muted: bool,
     is_refresh_pending: bool,
     device_monitor: Option<(gst::DeviceMonitor, gst::bus::BusWatchGuard)>,
+    /// Inside Flatpak: `/dev`, watched for V4L2 nodes coming and going.
+    dev_watch: Option<gio::FileMonitor>,
     /// The cards that can play now, for the device menu.
     playable: Vec<plugview_core::DeviceInfo>,
     launch_mode: LaunchMode,
@@ -161,6 +163,7 @@ impl App {
                 is_muted: false,
                 is_refresh_pending: false,
                 device_monitor: None,
+                dev_watch: None,
                 playable: Vec::new(),
                 launch_mode,
                 tray: None,
@@ -178,6 +181,7 @@ impl App {
             if let Some((monitor, _watch)) = state.device_monitor.take() {
                 monitor.stop();
             }
+            state.dev_watch = None;
         });
         app.connect_window();
         app.start_background();
@@ -420,6 +424,23 @@ impl App {
             && let Ok(watch) = watch
         {
             self.state.borrow_mut().device_monitor = Some((monitor, watch));
+        }
+        // Inside Flatpak, udev's hot-plug events stop at the sandbox's network namespace, so the device monitor never
+        // hears a card come or go; the V4L2 nodes appearing in /dev (and udev setting their permissions) say it instead.
+        if std::env::var_os("FLATPAK_ID").is_some()
+            && let Ok(dev_watch) = gio::File::for_path("/dev").monitor_directory(gio::FileMonitorFlags::NONE, gio::Cancellable::NONE)
+        {
+            let weak = Rc::downgrade(self);
+            dev_watch.connect_changed(move |_, file, _, event| {
+                let is_video_node = file.basename().is_some_and(|name| name.to_string_lossy().starts_with("video"));
+                if is_video_node
+                    && matches!(event, gio::FileMonitorEvent::Created | gio::FileMonitorEvent::Deleted | gio::FileMonitorEvent::AttributeChanged)
+                    && let Some(app) = weak.upgrade()
+                {
+                    app.schedule_refresh();
+                }
+            });
+            self.state.borrow_mut().dev_watch = Some(dev_watch);
         }
     }
 

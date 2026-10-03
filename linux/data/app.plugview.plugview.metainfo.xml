@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AppStream metadata for software centers and Flathub. scripts/release.sh checks that the release is listed. -->
+<component type="desktop-application">
+  <id>app.plugview.plugview</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>plugview</name>
+  <summary>Plug in a capture card and play your console</summary>
+  <developer id="app.plugview">
+    <name>plugview</name>
+  </developer>
+  <description>
+    <p>
+      plugview turns this screen into a monitor for your console. Plug in a USB capture card, connect a Switch,
+      PlayStation, Xbox or Steam Deck to it, and play with its sound, at the card's full frame rate and with as
+      little delay as the card allows.
+    </p>
+    <ul>
+      <li>Opens straight to the picture, nothing to set up</li>
+      <li>Volume, screenshots, resolution and full screen in a controls bar that fades while you play</li>
+      <li>Tells you when the card has no signal, and what to check on your console</li>
+      <li>Stays in the tray and opens when a card is plugged in</li>
+    </ul>
+    <p>Started from a terminal, plugview is also a command: plugview --list, plugview --measure.</p>
+  </description>
+  <launchable type="desktop-id">app.plugview.plugview.desktop</launchable>
+  <url type="homepage">https://plugview.app/</url>
+  <url type="help">https://plugview.app/guide/</url>
+  <url type="bugtracker">https://github.com/plugview/plugview/issues</url>
+  <url type="vcs-browser">https://github.com/plugview/plugview</url>
+  <provides>
+    <binary>plugview</binary>
+  </provides>
+  <categories>
+    <category>AudioVideo</category>
+    <category>Video</category>
+  </categories>
+  <keywords>
+    <keyword>capture card</keyword>
+    <keyword>HDMI</keyword>
+    <keyword>console</keyword>
+    <keyword>Switch</keyword>
+    <keyword>Steam Deck</keyword>
+  </keywords>
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <content_rating type="oars-1.1"/>
+  <branding>
+    <color type="primary" scheme_preference="light">#EDE8DD</color>
+    <color type="primary" scheme_preference="dark">#0A0A0C</color>
+  </branding>
+  <releases>
+    <release version="0.4.4" date="2026-10-03">
+      <description>
+        <p>plugview for Linux as a Flatpak.</p>
+      </description>
+    </release>
+    <release version="0.4.3" date="2026-10-03">
+      <description>
+        <p>The Linux preview becomes the full app: launcher, controls bar, screenshots, signal watch and tray.</p>
+      </description>
+    </release>
+  </releases>
+</component>
