@@ -342,6 +342,43 @@ fn tuning_matches_the_spec() {
     assert_eq!(Tuning::UPDATE_CHECK_INTERVAL_SECONDS, number(&spec["updateCheckIntervalSeconds"]));
     assert_eq!(Tuning::MEASUREMENT_SECONDS, number(&spec["measurementSeconds"]));
     assert_eq!(Tuning::SLOW_OUTPUT_LATENCY_MILLISECONDS, number(&spec["slowOutputLatencyMilliseconds"]));
+    assert_eq!(Tuning::NO_SIGNAL_AFTER_SECONDS, number(&spec["noSignalAfterSeconds"]));
+    assert_eq!(Tuning::REOPEN_BACKOFF_SECONDS.to_vec(), array(&spec["reopenBackoffSeconds"]).iter().map(number).collect::<Vec<_>>());
+    assert_eq!(i64::from(Tuning::SIGNAL_HELP_AFTER_ATTEMPTS), integer(&spec["signalHelpAfterAttempts"]));
+    assert_eq!(Tuning::BLACK_LUMA_MAX, integer(&spec["blackLumaMax"]));
+    assert_eq!(Tuning::BLACK_PICTURE_SECONDS, number(&spec["blackPictureSeconds"]));
+    assert_eq!(Tuning::SILENT_AUDIO_SECONDS, number(&spec["silentAudioSeconds"]));
+}
+
+#[test]
+fn signal_watch_matches_the_spec() {
+    let spec = fixture("signal-watch.json");
+    for case in array(&spec["watch"]) {
+        let expected = &case["expected"];
+        let expected = SignalWatch {
+            shows_no_signal: expected["showsNoSignal"].as_bool().unwrap(),
+            should_reopen: expected["shouldReopen"].as_bool().unwrap(),
+            shows_signal_help: expected["showsSignalHelp"].as_bool().unwrap(),
+        };
+        let attempts = u32::try_from(integer(&case["reopenAttempts"])).unwrap();
+        assert_eq!(signal_watch(number(&case["secondsSinceLastFrame"]), attempts), expected, "{}", description(case));
+    }
+    for case in array(&spec["blackFrame"]) {
+        let max_luma = u8::try_from(integer(&case["maxLuma"])).unwrap();
+        assert_eq!(Some(is_black_frame(max_luma)), case["expected"].as_bool(), "{case}");
+    }
+    for case in array(&spec["hints"]) {
+        let expected: Vec<SignalHint> = array(&case["expected"])
+            .iter()
+            .map(|hint| match text(hint) {
+                "blackPicture" => SignalHint::BlackPicture,
+                "noGameSound" => SignalHint::NoGameSound,
+                other => panic!("unknown hint {other}"),
+            })
+            .collect();
+        let hints = signal_hints(number(&case["blackPictureSeconds"]), optional_number(&case["silentAudioSeconds"]));
+        assert_eq!(hints, expected, "{}", description(case));
+    }
 }
 
 #[test]

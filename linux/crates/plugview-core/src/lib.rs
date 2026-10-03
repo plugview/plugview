@@ -11,6 +11,7 @@ mod launcher;
 mod measurement;
 mod release;
 mod selection;
+mod signal_watch;
 mod text;
 mod tuning;
 
@@ -22,4 +23,5 @@ pub use launcher::{CaptureFailure, LauncherEvent, LauncherState, PermissionKind,
 pub use measurement::{LatencyFacts, LatencyIssue, latency_advice, latency_issues, percentile};
 pub use release::{FeedError, Update, is_version_newer, update_from_feed};
 pub use selection::{DeviceInfo, DeviceTransport, playable_video_devices, preferred_first, select_audio_device, select_video_device, should_auto_play};
+pub use signal_watch::{SignalHint, SignalWatch, is_black_frame, signal_hints, signal_watch};
 pub use tuning::{PLUGVIEW_VERSION, Tuning};

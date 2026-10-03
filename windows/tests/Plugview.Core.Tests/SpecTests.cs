@@ -273,6 +273,41 @@ public sealed class SpecTests
         Assert.Equal(Tuning.UpdateCheckIntervalSeconds, spec["updateCheckIntervalSeconds"].Number());
         Assert.Equal(Tuning.MeasurementSeconds, spec["measurementSeconds"].Number());
         Assert.Equal(Tuning.SlowOutputLatencyMilliseconds, spec["slowOutputLatencyMilliseconds"].Number());
+        Assert.Equal(Tuning.NoSignalAfterSeconds, spec["noSignalAfterSeconds"].Number());
+        Assert.Equal(spec["reopenBackoffSeconds"].Items().Select(seconds => seconds.Number()), Tuning.ReopenBackoffSeconds);
+        Assert.Equal(Tuning.SignalHelpAfterAttempts, spec["signalHelpAfterAttempts"].Integer());
+        Assert.Equal(Tuning.BlackLumaMax, spec["blackLumaMax"].Integer());
+        Assert.Equal(Tuning.BlackPictureSeconds, spec["blackPictureSeconds"].Number());
+        Assert.Equal(Tuning.SilentAudioSeconds, spec["silentAudioSeconds"].Number());
+    }
+
+    [Fact]
+    public void SignalWatchMatchesTheSpec()
+    {
+        var spec = Fixture.Load("signal-watch.json");
+        foreach (var testCase in spec["watch"].Items().OfType<JsonNode>())
+        {
+            var expected = testCase["expected"];
+            var expectedWatch = new SignalWatch(
+                expected!["showsNoSignal"]!.GetValue<bool>(), expected["shouldReopen"]!.GetValue<bool>(), expected["showsSignalHelp"]!.GetValue<bool>());
+            var watch = SignalWatcher.Watch(testCase["secondsSinceLastFrame"].Number(), (int)testCase["reopenAttempts"].Integer());
+            Assert.True(expectedWatch == watch, testCase.Description());
+        }
+        foreach (var testCase in spec["blackFrame"].Items().OfType<JsonNode>())
+        {
+            Assert.True(testCase["expected"]!.GetValue<bool>() == SignalWatcher.IsBlackFrame((int)testCase["maxLuma"].Integer()), testCase.ToJsonString());
+        }
+        foreach (var testCase in spec["hints"].Items().OfType<JsonNode>())
+        {
+            var expected = testCase["expected"].Items().Select(hint => hint.Text() switch
+            {
+                "blackPicture" => SignalHint.BlackPicture,
+                "noGameSound" => SignalHint.NoGameSound,
+                var other => throw new InvalidDataException($"unknown hint {other}"),
+            });
+            var hints = SignalWatcher.Hints(testCase["blackPictureSeconds"].Number(), testCase["silentAudioSeconds"]?.GetValue<double>());
+            Assert.True(expected.SequenceEqual(hints), testCase.Description());
+        }
     }
 
     [Fact]

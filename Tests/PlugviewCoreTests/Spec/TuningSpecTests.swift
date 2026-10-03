@@ -10,6 +10,12 @@ import Testing
         let updateCheckIntervalSeconds: Double
         let measurementSeconds: Double
         let slowOutputLatencyMilliseconds: Double
+        let noSignalAfterSeconds: Double
+        let reopenBackoffSeconds: [Double]
+        let signalHelpAfterAttempts: Int
+        let blackLumaMax: Int
+        let blackPictureSeconds: Double
+        let silentAudioSeconds: Double
     }
 
     struct CaptureTools: Decodable {
@@ -50,6 +56,12 @@ import Testing
         #expect(Tuning.updateCheckIntervalSeconds == spec.updateCheckIntervalSeconds)
         #expect(Tuning.measurementSeconds == spec.measurementSeconds)
         #expect(Tuning.slowOutputLatencyMilliseconds == spec.slowOutputLatencyMilliseconds)
+        #expect(Tuning.noSignalAfterSeconds == spec.noSignalAfterSeconds)
+        #expect(Tuning.reopenBackoffSeconds == spec.reopenBackoffSeconds)
+        #expect(Tuning.signalHelpAfterAttempts == spec.signalHelpAfterAttempts)
+        #expect(Tuning.blackLumaMax == spec.blackLumaMax)
+        #expect(Tuning.blackPictureSeconds == spec.blackPictureSeconds)
+        #expect(Tuning.silentAudioSeconds == spec.silentAudioSeconds)
     }
 
     @Test func captureToolsMatchTheSpec() throws {

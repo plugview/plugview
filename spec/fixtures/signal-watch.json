@@ -1,0 +1,31 @@
+{
+  "watch": [
+    { "description": "frames are arriving", "secondsSinceLastFrame": 0.5, "reopenAttempts": 0, "expected": { "showsNoSignal": false, "shouldReopen": false, "showsSignalHelp": false } },
+    { "description": "a short gap is not a lost signal", "secondsSinceLastFrame": 1.49, "reopenAttempts": 0, "expected": { "showsNoSignal": false, "shouldReopen": false, "showsSignalHelp": false } },
+    { "description": "the signal is lost: say so and reopen at once", "secondsSinceLastFrame": 1.5, "reopenAttempts": 0, "expected": { "showsNoSignal": true, "shouldReopen": true, "showsSignalHelp": false } },
+    { "description": "a late tick still reopens", "secondsSinceLastFrame": 1.9, "reopenAttempts": 0, "expected": { "showsNoSignal": true, "shouldReopen": true, "showsSignalHelp": false } },
+    { "description": "after one attempt, wait 1 s", "secondsSinceLastFrame": 2.4, "reopenAttempts": 1, "expected": { "showsNoSignal": true, "shouldReopen": false, "showsSignalHelp": false } },
+    { "description": "second attempt", "secondsSinceLastFrame": 2.5, "reopenAttempts": 1, "expected": { "showsNoSignal": true, "shouldReopen": true, "showsSignalHelp": false } },
+    { "description": "after two attempts, wait 2 s more", "secondsSinceLastFrame": 4.4, "reopenAttempts": 2, "expected": { "showsNoSignal": true, "shouldReopen": false, "showsSignalHelp": false } },
+    { "description": "third attempt", "secondsSinceLastFrame": 4.5, "reopenAttempts": 2, "expected": { "showsNoSignal": true, "shouldReopen": true, "showsSignalHelp": false } },
+    { "description": "three attempts failed: show the console checklist, keep trying every 4 s", "secondsSinceLastFrame": 8.5, "reopenAttempts": 3, "expected": { "showsNoSignal": true, "shouldReopen": true, "showsSignalHelp": true } },
+    { "description": "the last wait repeats", "secondsSinceLastFrame": 12.4, "reopenAttempts": 4, "expected": { "showsNoSignal": true, "shouldReopen": false, "showsSignalHelp": true } },
+    { "description": "the last wait repeats, attempt due", "secondsSinceLastFrame": 12.5, "reopenAttempts": 4, "expected": { "showsNoSignal": true, "shouldReopen": true, "showsSignalHelp": true } }
+  ],
+  "blackFrame": [
+    { "maxLuma": 0, "expected": true },
+    { "maxLuma": 16, "expected": true },
+    { "maxLuma": 24, "expected": true },
+    { "maxLuma": 25, "expected": false },
+    { "maxLuma": 235, "expected": false }
+  ],
+  "hints": [
+    { "description": "a healthy picture and sound", "blackPictureSeconds": 0, "silentAudioSeconds": 0, "expected": [] },
+    { "description": "a black moment in a game is not HDCP", "blackPictureSeconds": 2.9, "silentAudioSeconds": 2.9, "expected": [] },
+    { "description": "black for 3 s points at HDCP", "blackPictureSeconds": 3, "silentAudioSeconds": 0, "expected": ["blackPicture"] },
+    { "description": "a black picture explains the silence, so only one hint", "blackPictureSeconds": 10, "silentAudioSeconds": 10, "expected": ["blackPicture"] },
+    { "description": "a quiet scene is not missing sound", "blackPictureSeconds": 0, "silentAudioSeconds": 4.9, "expected": [] },
+    { "description": "5 s of digital silence with a picture points at the console's audio output", "blackPictureSeconds": 0, "silentAudioSeconds": 5, "expected": ["noGameSound"] },
+    { "description": "no card audio, no sound hint", "blackPictureSeconds": 0, "silentAudioSeconds": null, "expected": [] }
+  ]
+}

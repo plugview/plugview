@@ -33,4 +33,27 @@ public enum Tuning {
 
     /// Playback-device latency above which `--measure` warns (Bluetooth headphones are typically 150 ms+).
     public static let slowOutputLatencyMilliseconds = 40.0
+
+    // Signal watch (spec/fixtures/signal-watch.json). From user reports of other viewers, not yet measured on our
+    // cards: calibrate them with the hardware test plan (spec/hardware-test-plan.md) before relying on them.
+
+    /// Seconds without a frame, while the card is still connected, before the window says "No signal" and reopens it.
+    ///
+    /// Cards stop sending while the console changes resolution or wakes; 1.5 s covers a normal mode switch.
+    public static let noSignalAfterSeconds = 1.5
+
+    /// Waits between reopen attempts after the first, in seconds; the last one repeats.
+    public static let reopenBackoffSeconds = [1.0, 2.0, 4.0]
+
+    /// Reopen attempts after which the window also shows the console checklist (HDCP, 1080p, 120 Hz).
+    public static let signalHelpAfterAttempts = 3
+
+    /// Brightest luma (0–255) a sampled frame may have and still count as black: video black is 16, plus card noise.
+    public static let blackLumaMax = 24
+
+    /// Seconds of black frames before the window suggests turning HDCP off (PlayStation sends black when it is on).
+    public static let blackPictureSeconds = 3.0
+
+    /// Seconds of digital silence, with a picture, before the window suggests stereo PCM output on the console.
+    public static let silentAudioSeconds = 5.0
 }

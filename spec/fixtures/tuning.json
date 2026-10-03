@@ -5,5 +5,11 @@
   "controlsHideSeconds": 2.5,
   "updateCheckIntervalSeconds": 86400,
   "measurementSeconds": 5,
-  "slowOutputLatencyMilliseconds": 40
+  "slowOutputLatencyMilliseconds": 40,
+  "noSignalAfterSeconds": 1.5,
+  "reopenBackoffSeconds": [1, 2, 4],
+  "signalHelpAfterAttempts": 3,
+  "blackLumaMax": 24,
+  "blackPictureSeconds": 3,
+  "silentAudioSeconds": 5
 }

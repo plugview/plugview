@@ -26,4 +26,22 @@ public static class Tuning
 
     /// <summary>Playback-device latency above which <c>--measure</c> warns.</summary>
     public const double SlowOutputLatencyMilliseconds = 40;
+
+    /// <summary>Seconds without a frame, while the card is still connected, before "No signal" and a reopen.</summary>
+    public const double NoSignalAfterSeconds = 1.5;
+
+    /// <summary>Waits between reopen attempts after the first, in seconds; the last one repeats.</summary>
+    public static readonly IReadOnlyList<double> ReopenBackoffSeconds = [1, 2, 4];
+
+    /// <summary>Reopen attempts after which the window also shows the console checklist.</summary>
+    public const int SignalHelpAfterAttempts = 3;
+
+    /// <summary>Brightest luma (0–255) a sampled frame may have and still count as black.</summary>
+    public const int BlackLumaMax = 24;
+
+    /// <summary>Seconds of black frames before the HDCP hint.</summary>
+    public const double BlackPictureSeconds = 3;
+
+    /// <summary>Seconds of digital silence, with a picture, before the console audio hint.</summary>
+    public const double SilentAudioSeconds = 5;
 }

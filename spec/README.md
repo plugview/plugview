@@ -122,3 +122,32 @@ trackpad up is always louder, whatever the system's scroll direction.
   `https://plugview.app/releases/latest.json` at most once per `updateCheckIntervalSeconds`, with their platform
   (`macos`, `windows`, `linux`) and kind (`app`, `cli`, `flatpak`). Architectures are `universal`, `x86_64` and
   `arm64`.
+
+### Signal watch and picture help
+
+While a card is open, each port ticks `signalWatch` a few times a second (`signal-watch.json`):
+
+- **Frames stop** while the card is still connected (a console changing resolution, waking, or an HDMI replug):
+  after `noSignalAfterSeconds` the window shows "No signal" over a black background, never a frozen frame, and
+  reopens the card at once, then after each `reopenBackoffSeconds` wait. After `signalHelpAfterAttempts` it also
+  shows the console checklist below. A frame resets the attempts.
+- **Black frames** (`isBlackFrame` on a sampled frame, off the display path) for `blackPictureSeconds` show the
+  black-picture help. **Digital silence** with a picture for `silentAudioSeconds` shows the sound help. Only one
+  hint shows at a time.
+- Sampling never touches the display path: at most one small frame every half second, measured with `--measure`.
+
+The text is the same on every platform (menu names are the consoles' own; check them on hardware before a release):
+
+**No picture: black screen**
+- PlayStation 5: Settings › System › HDMI › turn off **Enable HDCP**. PlayStation 4: Settings › System › turn off
+  **Enable HDCP**. PlayStation 3 always protects its HDMI output and cannot be captured over HDMI.
+- Set the console to **1080p** (cards with 4K passthrough still capture at most 1080p or 1440p).
+- Turn off **120 Hz** and **VRR** output on the console.
+- Nintendo Switch: it must sit in its dock. Switch Lite has no video output.
+- Unplug the HDMI cable from the card and plug it back in.
+
+**No game sound**
+- PlayStation 5: Settings › Sound › Audio Output › Audio Format (Priority) › **Linear PCM**.
+- Xbox: Settings › General › Volume & audio output › HDMI audio › **Stereo uncompressed**.
+- Nintendo Switch 2: set TV sound to **Stereo**.
+- Unplug headphones from the controller or the console: game sound then goes back to HDMI.
