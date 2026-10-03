@@ -91,15 +91,28 @@ public struct MenuBarView: View {
         case .notChecked: Text("Not checked yet").foregroundStyle(Palette.muted)
         case .checking: Text("Checking…").foregroundStyle(Palette.muted)
         case .upToDate: Label("Up to date", systemImage: "checkmark.circle").foregroundStyle(Palette.ok)
-        case .available(let version, _): Text("\(version) is available").foregroundStyle(Palette.signal)
+        case .available(let version, _, let canInstall):
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(version) is available").foregroundStyle(Palette.signal)
+                // Until plugview is signed with a Developer ID, macOS sees every build as a new app.
+                if canInstall { Text("macOS asks for camera access again after it").font(BrandFonts.sans(11)).foregroundStyle(Palette.muted) }
+            }
+        case .installing(let version, let progress):
+            Text(progress < 1 ? "Downloading \(version)… \(Int((progress * 100).rounded()))%" : "Installing \(version)…").foregroundStyle(Palette.muted)
+                .monospacedDigit()
+        case .installFailed(_, _, let reason): Text("Could not install: \(reason)").foregroundStyle(Palette.tally).lineLimit(2)
         case .failed: Text("Could not check").foregroundStyle(Palette.tally)
         }
     }
 
     @ViewBuilder private var updateAction: some View {
         switch menuBar.updateStatus {
-        case .available(_, let url):
+        case .available(_, _, true):
+            Button("Install and relaunch", action: menuBar.installUpdate).buttonStyle(PanelButtonStyle(isPrimary: true))
+        case .available(_, let url, false), .installFailed(_, let url, _):
             Link(destination: url) { Text("Download") }.buttonStyle(PanelButtonStyle(isPrimary: true))
+        case .installing(_, let progress):
+            ProgressView(value: progress).progressViewStyle(.circular).controlSize(.small)
         case .checking:
             ProgressView().controlSize(.small)
         case .notChecked, .upToDate, .failed:

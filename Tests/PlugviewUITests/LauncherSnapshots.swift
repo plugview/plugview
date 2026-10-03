@@ -62,7 +62,7 @@ import Testing
         let menuBar = MenuBarModel(version: "0.3.0")
         menuBar.playingDetails = "1920×1080 @ 60 fps · audio from UGREEN 25773"
         menuBar.canLaunchAtLogin = true
-        menuBar.updateStatus = .available(version: "0.3.1", url: URL(filePath: "/"))
+        menuBar.updateStatus = .available(version: "0.3.1", url: URL(filePath: "/"), canInstall: true)
         try render(MenuBarView(launcher: launcher, controls: controls, menuBar: menuBar), to: outputDirectory.appending(path: "8-menu-bar.png"))
 
         let notices: [(String, SignalNotice)] = [

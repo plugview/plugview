@@ -9,6 +9,8 @@ final class SettingsController {
     private let model: MenuBarModel
     private let settings: AppSettings
     private var updateTask: Task<Void, Never>?
+    /// The release the last check offered, to install it.
+    private var availableUpdate: ReleaseFeed.Update?
 
     init(model: MenuBarModel, settings: AppSettings) {
         self.model = model
@@ -35,6 +37,7 @@ final class SettingsController {
         }
         model.setLaunchesAtLogin = { [weak self] isOn in self?.setLaunchesAtLogin(isOn) }
         model.checkForUpdates = { [weak self] in self?.checkForUpdates() }
+        model.installUpdate = { [weak self] in self?.installUpdate() }
     }
 
     /// Reads the login item again; the user can also change it in System Settings › General › Login Items.
@@ -68,15 +71,37 @@ final class SettingsController {
         model.updateStatus = .checking
         updateTask = Task { [weak self] in
             let status: UpdateStatus
+            var update: ReleaseFeed.Update?
             do {
-                status = try await UpdateChecker.newerRelease().map { .available(version: $0.version, url: $0.downloadURL) } ?? .upToDate
+                update = try await UpdateChecker.newerRelease()
+                status = update.map { .available(version: $0.version, url: $0.downloadURL, canInstall: UpdateInstaller.canInstall($0)) } ?? .upToDate
             } catch {
                 status = .failed
             }
             guard let self else { return }
+            self.availableUpdate = update
             if status != .failed { self.settings.lastUpdateCheck = .now }
             self.model.updateStatus = status
             self.updateTask = nil
+        }
+    }
+
+    /// Downloads the offered release, swaps it in and relaunches; on failure, offers the download instead.
+    func installUpdate() {
+        guard updateTask == nil, let update = availableUpdate else { return }
+        model.updateStatus = .installing(version: update.version, progress: 0)
+        updateTask = Task { [weak self] in
+            do {
+                let installed = try await UpdateInstaller.install(update) { progress in
+                    self?.model.updateStatus = .installing(version: update.version, progress: progress)
+                }
+                print("Installed plugview \(update.version). Relaunching…")
+                UpdateInstaller.relaunch(installed)
+            } catch {
+                printError("could not install \(update.version): \(error)")
+                self?.model.updateStatus = .installFailed(version: update.version, url: update.downloadURL, reason: "\(error)")
+                self?.updateTask = nil
+            }
         }
     }
 }

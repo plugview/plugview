@@ -154,7 +154,8 @@ the smoothest; your choice is remembered per card), and the settings:
 - **Stay in the menu bar when closed**: closing the window releases the card (the camera light goes off) and
   plugview keeps waiting in the menu bar. Turn it off to quit when the window closes, as before.
 - **Launch at login**, and **Check for updates daily** (reads plugview.app/releases/latest.json; see
-  [SECURITY.md](SECURITY.md)).
+  [SECURITY.md](SECURITY.md)). When a new version is out, **Install and relaunch** updates plugview in place: it
+  downloads, verifies and swaps the app, then reopens it.
 
 Typed in a terminal, plugview has no menu bar icon, always starts in the best mode, and quits when its window
 closes, exactly as before.

@@ -6,8 +6,12 @@ public enum UpdateStatus: Equatable, Sendable {
     case notChecked
     case checking
     case upToDate
-    /// A newer release, with the page to download it from.
-    case available(version: String, url: URL)
+    /// A newer release, with its download; `canInstall` when plugview can install it in place and relaunch.
+    case available(version: String, url: URL, canInstall: Bool)
+    /// Downloading (progress 0...1) or installing a release.
+    case installing(version: String, progress: Double)
+    /// Installing failed; the release can still be downloaded by hand.
+    case installFailed(version: String, url: URL, reason: String)
     /// The check could not finish, e.g. offline.
     case failed
 }
@@ -38,6 +42,7 @@ public final class MenuBarModel {
     public var setLaunchesAtLogin: (Bool) -> Void = { _ in }
     public var setChecksForUpdates: (Bool) -> Void = { _ in }
     public var checkForUpdates: () -> Void = {}
+    public var installUpdate: () -> Void = {}
     public var quit: () -> Void = {}
 
     public init(version: String) {

@@ -5,6 +5,7 @@ import Testing
 
 /// Checks the Mac's brand against `spec/fixtures/brand.json`, which the Windows and Linux apps draw from too, so no
 /// platform drifts from the brand kit.
+@MainActor
 @Suite struct BrandSpecTests {
     struct Spec: Decodable {
         let palette: [String: String]
