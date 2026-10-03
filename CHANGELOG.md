@@ -6,6 +6,11 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- `--mode` accepted malformed values such as `1920x1080@@60` or `+1920x1080@60`. `--mode` and
+  `--volume` now take plain digits only.
+
 ## [0.3.1] - 2026-10-02
 
 ### Changed
