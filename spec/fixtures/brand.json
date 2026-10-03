@@ -1,0 +1,69 @@
+{
+  "source": "plugview-design brand kit v1.0 (plugview-mark.svg, plugview-waiting.svg, plugview-intro.svg, plugview-live.svg)",
+  "palette": {
+    "cathode": "#0A0A0C",
+    "surface": "#0C0C0E",
+    "raised": "#17171B",
+    "line": "#2A2A31",
+    "bone": "#EDE8DD",
+    "muted": "#8C887F",
+    "signal": "#FFB000",
+    "tally": "#FF3B2F",
+    "ok": "#7BE0A0",
+    "glow": "#1B1912"
+  },
+  "bars": ["#D8D8D8", "#E3C200", "#00B8C4", "#1FB24A", "#B23AB8", "#D2342A", "#2B3FD0"],
+  "fonts": { "sans": "Geist", "mono": "Geist Mono", "weights": { "sans": ["Regular", "Medium", "SemiBold"], "mono": ["Medium", "SemiBold"] } },
+  "window": { "isDarkInLightMode": true, "background": "cathode" },
+  "geometry": {
+    "viewBox": 64,
+    "port": [[7, 17], [57, 17], [57, 37], [48, 47], [16, 47], [7, 37]],
+    "triangle": [[26.5, 22], [42, 32], [26.5, 42]],
+    "connector": [[18, 12], [35, 12], [53, 26.5], [53, 37.5], [35, 52], [18, 52]],
+    "connectorWindow": [[23, 17.5], [33, 17.5], [46.5, 28.5], [46.5, 35.5], [33, 46.5], [23, 46.5]],
+    "prongs": [[4, 22, 12, 5], [4, 37, 12, 5]],
+    "prongCornerRadius": 2.5,
+    "portStrokeWidth": 4.5,
+    "triangleStrokeWidth": 1.5,
+    "barStarts": [0, 9.14, 18.28, 27.42, 36.56, 45.7, 54.84],
+    "barWidth": 9.16,
+    "connectorBars": { "x": 23, "scaleX": 0.37 },
+    "triangleBars": { "x": 26.5, "scaleX": 0.242, "liveSecondCopyX": 11 }
+  },
+  "animations": {
+    "waiting": {
+      "viewBoxWidth": 128,
+      "connectorTranslate": [-2, 9],
+      "connectorScale": 0.72,
+      "hoverSeconds": 2.4,
+      "hover": { "frames": [[0, 0], [0.5, 6], [1, 0]], "easing": [0.42, 0, 0.58, 1] },
+      "blinkSeconds": 1.2,
+      "dimFromSeconds": 0.6,
+      "dimOpacity": 0.2,
+      "portOffsetX": 64,
+      "portOpacity": 0.35,
+      "portDash": [3, 3]
+    },
+    "intro": {
+      "delaySeconds": 0.2,
+      "durationSeconds": 2.6,
+      "flashRect": [11, 31, 42, 2],
+      "flashCornerRadius": 1,
+      "flashCenter": [32, 32],
+      "connectorCenter": [28.5, 32],
+      "triangleCenter": [34.25, 32],
+      "tracks": {
+        "portOpacity": { "frames": [[0, 0.28], [0.52, 0.28], [0.58, 1]], "easing": [0.25, 0.1, 0.25, 1] },
+        "flashScaleX": { "frames": [[0, 0], [0.5, 0], [0.55, 1]], "easing": [0.25, 0.1, 0.25, 1] },
+        "flashScaleY": { "frames": [[0, 1], [0.55, 1], [0.64, 7]], "easing": [0.25, 0.1, 0.25, 1] },
+        "flashOpacity": { "frames": [[0, 0], [0.5, 0], [0.55, 1], [0.64, 0]], "easing": [0.25, 0.1, 0.25, 1] },
+        "connectorX": { "frames": [[0, -46], [0.44, -2], [0.52, 0]], "easing": [0.65, 0, 0.35, 1] },
+        "connectorScale": { "frames": [[0, 0.5], [0.44, 0.5], [0.52, 0.3], [0.58, 0.25]], "easing": [0.65, 0, 0.35, 1] },
+        "connectorOpacity": { "frames": [[0, 0], [0.12, 1], [0.52, 1], [0.58, 0]], "easing": [0.65, 0, 0.35, 1] },
+        "triangleScale": { "frames": [[0, 0.4], [0.56, 0.4], [0.78, 1]], "easing": [0.2, 1.4, 0.4, 1] },
+        "triangleOpacity": { "frames": [[0, 0], [0.56, 0], [0.7, 1]], "easing": [0.2, 1.4, 0.4, 1] }
+      }
+    },
+    "live": { "scrollSeconds": 2.8, "scrollDistance": 15.5 }
+  }
+}

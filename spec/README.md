@@ -12,6 +12,7 @@ Also here:
 - [known-issues.md](known-issues.md): what goes wrong for people with capture cards on each platform, from user
   reports, and what plugview does about each problem.
 - [hardware-test-plan.md](hardware-test-plan.md): the checks only a person with a card and a console can do.
+- [parity.md](parity.md): every Mac feature and brand element, and where Windows and Linux stand.
 
 ## Fixtures
 
@@ -33,6 +34,7 @@ its tests, runs every case and compares the result exactly, unless the file give
 | `easing.json` | `CubicBezier`, `Keyframes` | The brand animations' timing curves (CSS `cubic-bezier` semantics) |
 | `signal-watch.json` | `signalWatch`, `isBlackFrame`, `signalHints` | Reopening a card whose frames stopped; black-picture and no-sound hints |
 | `card-quirks.json` | `CardAudioQuirks` (Windows) | Cards whose audio is not what they declare, and how to read it |
+| `brand.json` | Palette, mark geometry, animation keyframes | The brand kit in numbers: every platform draws from it, and its tests compare its constants to it |
 
 Conventions:
 
@@ -54,7 +56,7 @@ Three rules that standard libraries disagree on, so every port implements them i
 - **Download URLs** must use the `https` scheme and the host `plugview.app`, both compared ignoring case; user info,
   subdomains and a trailing dot are other hosts.
 
-The brand's geometry, colors and animation keyframes are not copied here. Their source is the brand kit
+The brand's colors, mark geometry and animation keyframes are in `brand.json`, taken from the brand kit
 (`plugview-design/*.svg`, kept outside this repository); `easing.json` pins down how its curves are evaluated.
 
 ## Rules the fixtures cannot check

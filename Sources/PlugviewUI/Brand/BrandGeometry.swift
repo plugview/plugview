@@ -2,23 +2,37 @@ import SwiftUI
 
 /// The mark's parts in the brand kit's 64-unit space (plugview-design/*.svg), drawn with SwiftUI paths.
 enum BrandGeometry {
+    // The points, sizes and positions below are checked against `spec/fixtures/brand.json`.
+
     /// The HDMI port outline.
-    static let port = polygon([(7, 17), (57, 17), (57, 37), (48, 47), (16, 47), (7, 37)])
+    static let portPoints: [(Double, Double)] = [(7, 17), (57, 17), (57, 37), (48, 47), (16, 47), (7, 37)]
     /// The play triangle inside the port.
-    static let triangle = polygon([(26.5, 22), (42, 32), (26.5, 42)])
+    static let trianglePoints: [(Double, Double)] = [(26.5, 22), (42, 32), (26.5, 42)]
     /// The sideways HDMI connector body, and the window its color bars show through.
-    static let connector = polygon([(18, 12), (35, 12), (53, 26.5), (53, 37.5), (35, 52), (18, 52)])
-    static let connectorWindow = polygon([(23, 17.5), (33, 17.5), (46.5, 28.5), (46.5, 35.5), (33, 46.5), (23, 46.5)])
+    static let connectorPoints: [(Double, Double)] = [(18, 12), (35, 12), (53, 26.5), (53, 37.5), (35, 52), (18, 52)]
+    static let connectorWindowPoints: [(Double, Double)] = [(23, 17.5), (33, 17.5), (46.5, 28.5), (46.5, 35.5), (33, 46.5), (23, 46.5)]
     static let prongs = [CGRect(x: 4, y: 22, width: 12, height: 5), CGRect(x: 4, y: 37, width: 12, height: 5)]
+    static let prongCornerRadius = 2.5
+
+    static let port = polygon(portPoints)
+    static let triangle = polygon(trianglePoints)
+    static let connector = polygon(connectorPoints)
+    static let connectorWindow = polygon(connectorWindowPoints)
 
     static let portStroke = StrokeStyle(lineWidth: 4.5, lineJoin: .round)
     static let triangleStroke = StrokeStyle(lineWidth: 1.5, lineJoin: .round)
 
+    /// Where each of the seven SMPTE bars starts, and their width, in the 64-unit space.
+    static let barStarts = [0, 9.14, 18.28, 27.42, 36.56, 45.7, 54.84]
+    static let barWidth = 9.16
+    /// Where the bars sit, squeezed, inside the connector and inside the triangle; the live loop adds a second copy.
+    static let connectorBars = (x: 23.0, scaleX: 0.37)
+    static let triangleBars = (x: 26.5, scaleX: 0.242, liveSecondCopyX: 11.0)
+
     /// Draws the seven SMPTE bars, 64 units wide before `scaleX`, starting at `x`.
     static func drawBars(in context: GraphicsContext, x: Double, scaleX: Double) {
-        let barStarts = [0, 9.14, 18.28, 27.42, 36.56, 45.7, 54.84]
         for (start, color) in zip(barStarts, Palette.bars) {
-            context.fill(Path(CGRect(x: x + start * scaleX, y: 0, width: 9.16 * scaleX, height: 64)), with: .color(color))
+            context.fill(Path(CGRect(x: x + start * scaleX, y: 0, width: barWidth * scaleX, height: 64)), with: .color(color))
         }
     }
 
@@ -26,12 +40,12 @@ enum BrandGeometry {
     static func drawConnector(in context: GraphicsContext, prongOpacity: Double) {
         var bars = context
         bars.clip(to: connectorWindow)
-        drawBars(in: bars, x: 23, scaleX: 0.37)
+        drawBars(in: bars, x: connectorBars.x, scaleX: connectorBars.scaleX)
         context.stroke(connector, with: .color(Palette.bone), style: portStroke)
         var prongLayer = context
         prongLayer.opacity *= prongOpacity
         for prong in prongs {
-            prongLayer.fill(Path(roundedRect: prong, cornerRadius: 2.5), with: .color(Palette.signal))
+            prongLayer.fill(Path(roundedRect: prong, cornerRadius: prongCornerRadius), with: .color(Palette.signal))
         }
     }
 
@@ -40,10 +54,10 @@ enum BrandGeometry {
         var bars = context
         bars.clip(to: triangle)
         if let barsOffset {
-            drawBars(in: bars, x: 11 + barsOffset, scaleX: 0.242)
-            drawBars(in: bars, x: 26.5 + barsOffset, scaleX: 0.242)
+            drawBars(in: bars, x: triangleBars.liveSecondCopyX + barsOffset, scaleX: triangleBars.scaleX)
+            drawBars(in: bars, x: triangleBars.x + barsOffset, scaleX: triangleBars.scaleX)
         } else {
-            drawBars(in: bars, x: 26.5, scaleX: 0.242)
+            drawBars(in: bars, x: triangleBars.x, scaleX: triangleBars.scaleX)
         }
         context.stroke(triangle, with: .color(Palette.bone), style: triangleStroke)
     }
