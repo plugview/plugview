@@ -42,6 +42,17 @@ brew install gtk4 libadwaita gstreamer
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test
 ```
 
+Window checks without a Linux PC (native arm64 Fedora 42 under Xvfb; results land in `target/ui-check/`):
+
+```sh
+docker run --rm --platform linux/arm64 -v "$PWD/..":/src -v "$PWD/target/ui-check":/out fedora:42 bash /src/linux/scripts/keys.sh
+docker run --rm --platform linux/arm64 -v "$PWD/..":/src -v "$PWD/target/ui-check":/out fedora:42 bash /src/linux/scripts/tray.sh
+```
+
+`keys.sh` checks the volume, mute and zoom keys (`keys.log`, `geometry.txt`); `tray.sh` runs a stub tray host
+(`watcher.py`) and checks the menu, closing to the tray, a second launch, launch at login, Quit, and quitting
+without a tray (`tray.log`).
+
 ## Run it
 
 ```sh
