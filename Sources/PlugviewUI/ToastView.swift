@@ -15,7 +15,7 @@ public struct ToastView: View {
                     .id(toast.id)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .task(id: toast.id) {
-                        try? await Task.sleep(for: .seconds(toast.action == nil ? 2.5 : 6))
+                        try? await Task.sleep(for: .seconds(Self.seconds(showing: toast)))
                         if model.toast?.id == toast.id { model.toast = nil }
                     }
             }
@@ -25,9 +25,21 @@ public struct ToastView: View {
         .fixedSize()
     }
 
+    /// Long enough to read, longer with an action; a signal toast stays until its intro has played.
+    private static func seconds(showing toast: Toast) -> Double {
+        if toast.action != nil { return 6 }
+        switch toast.icon {
+        case .symbol: return 2.5
+        case .signal: return SignalAnimation.Intro.length + 0.4
+        }
+    }
+
     private func content(for toast: Toast) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: toast.symbol).foregroundStyle(toast.isWarning ? Palette.signal : Palette.ok)
+            switch toast.icon {
+            case .symbol(let name): Image(systemName: name).foregroundStyle(toast.isWarning ? Palette.signal : Palette.ok)
+            case .signal: SignalAnimation().frame(width: 26, height: 26)
+            }
             Text(toast.message).font(BrandFonts.sans(13)).foregroundStyle(Palette.bone)
             if let actionTitle = toast.actionTitle, let action = toast.action {
                 Button(actionTitle) {

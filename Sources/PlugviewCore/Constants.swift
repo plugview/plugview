@@ -17,11 +17,6 @@ public enum Tuning {
     /// Volume change per arrow-key press, in percent.
     public static let volumeStepPercent = 10
 
-    /// Seconds a card found from the app launcher waits before it plays.
-    ///
-    /// The length of the plug-in intro animation (plugview-intro.svg: 0.2 s delay + 2.6 s). Play starts it sooner.
-    public static let launcherAutoPlaySeconds = 2.8
-
     /// Seconds without mouse movement before the controls and window buttons fade out over the video.
     public static let controlsHideSeconds = 2.5
 

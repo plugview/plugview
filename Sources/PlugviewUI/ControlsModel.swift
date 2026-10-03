@@ -40,15 +40,25 @@ public final class ControlsModel {
 
 /// A message shown over the video for a few seconds, with an optional action.
 public struct Toast: Identifiable {
+    public enum Icon {
+        case symbol(String)
+        /// The plug-in intro, small: a card was found and its picture is already on screen.
+        case signal
+    }
+
     public let id = UUID()
-    public let symbol: String
+    public let icon: Icon
     public let message: String
     public let actionTitle: String?
     public let action: (() -> Void)?
     public let isWarning: Bool
 
     public init(symbol: String, message: String, actionTitle: String? = nil, isWarning: Bool = false, action: (() -> Void)? = nil) {
-        self.symbol = symbol
+        self.init(icon: .symbol(symbol), message: message, actionTitle: actionTitle, isWarning: isWarning, action: action)
+    }
+
+    public init(icon: Icon, message: String, actionTitle: String? = nil, isWarning: Bool = false, action: (() -> Void)? = nil) {
+        self.icon = icon
         self.message = message
         self.actionTitle = actionTitle
         self.action = action

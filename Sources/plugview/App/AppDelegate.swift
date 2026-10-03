@@ -183,7 +183,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Lets the user pick a ready device; when auto-playing, the first one starts once the plug-in intro ends.
+    /// Lets the user pick a ready device; when auto-playing, the first one starts right away.
+    ///
+    /// No waiting for the plug-in intro: the card is ready in about 0.2 s, and the intro would add 2.8 s.
     private func offerReadyDevices(isAutoPlaying: Bool) {
         launcher.play = { [weak self] device in Task { await self?.play(device, isUserChoice: true) } }
         launcher.isAutoPlayPending = isAutoPlaying
@@ -195,11 +197,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         guard autoPlayTask == nil else { return }
         autoPlayTask = Task { [weak self] in
-            do {
-                try await Task.sleep(for: .seconds(Tuning.launcherAutoPlaySeconds))
-            } catch {
-                return
-            }
             guard let self, case .ready(let devices) = self.launcher.state, let first = devices.first else { return }
             await self.play(first, isUserChoice: false)
         }
@@ -213,7 +210,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             launcher.play = nil
             launcher.isAutoPlayPending = false
         }
-        // The card may have been unplugged during the countdown.
+        // The card may have been unplugged since it was found.
         guard case .ready(let devices) = launcher.state, devices.contains(video), attachedDeviceIDs.isEmpty, !isAttaching else { return }
         if isUserChoice { settings.preferredDeviceID = video.uniqueID }
         await attach(video)
@@ -231,6 +228,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         isAttaching = true
         defer { isAttaching = false }
+        var isFreshStart = true
+        if case .playing = launcher.state { isFreshStart = false }
         do {
             let activeCapture = try await capture.start(
                 videoID: video.uniqueID, mode: modeChoice(for: video), audioID: audio?.uniqueID, volume: effectiveVolume)
@@ -244,7 +243,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             send(.playbackStarted(video))
             controls.playingDeviceID = video.uniqueID
             refreshModes()
-            showAttached(activeCapture)
+            showAttached(activeCapture, isFreshStart: isFreshStart)
         } catch {
             printError("\(error)")
             send(.playbackFailed(CaptureFailure(deviceName: video.name, reason: "\(error)")))
@@ -284,11 +283,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         print("Waiting for \(launcher.waitingTarget)… (run 'plugview --list' to see detected devices)")
     }
 
-    private func showAttached(_ activeCapture: ActiveCapture) {
+    /// `isFreshStart`: the picture replaces the launcher (not a device, mode, or sound change while playing), so
+    /// the app greets it with the plug-in intro in a toast, over the video instead of before it.
+    private func showAttached(_ activeCapture: ActiveCapture, isFreshStart: Bool) {
         let mode = activeCapture.mode
         let audioSummary = activeCapture.audioName.map { "audio from \($0)" } ?? "no audio"
         print("Showing \(activeCapture.videoName) · \(mode.summary), \(audioSummary)")
         menuBar.playingDetails = "\(mode.summary) · \(audioSummary)"
+        if launchMode == .app && isFreshStart { controls.toast = Toast(icon: .signal, message: "\(activeCapture.videoName) · \(mode.summary)") }
         warnAboutMissingSoundOnce()
         windowController.showLiveVideo(
             deviceName: activeCapture.videoName, details: "\(mode.summary) · \(audioSummary)", width: mode.width, height: mode.height)

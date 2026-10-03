@@ -14,7 +14,7 @@ public final class LauncherModel {
     public var continueToPermissions: (() -> Void)?
     /// Set while ready devices can be started from the launcher (an app launch); plays the given device now.
     public var play: ((DeviceInfo) -> Void)?
-    /// The first ready device plays on its own once the plug-in intro ends.
+    /// The first ready device is starting on its own.
     public var isAutoPlayPending = false
 
     public init() {}

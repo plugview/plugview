@@ -6,6 +6,11 @@ All notable changes to plugview are listed here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- A card found by the app plays right away instead of after the 2.8 s plug-in intro (the picture is up in
+  about 0.2 s). The intro now plays in a small banner over the live picture.
+
 ### Fixed
 
 - Unplugging the card while it played could crash plugview on macOS 27. The card's audio input now keeps the

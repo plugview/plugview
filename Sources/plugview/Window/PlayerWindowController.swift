@@ -290,8 +290,9 @@ private final class PlayerView: NSView {
         }
         guard !launcherView.isHidden else { return }
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.35
-            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            // Quick and front-loaded: the picture is already live underneath.
+            context.duration = 0.25
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
             launcherView.animator().alphaValue = 0
         } completionHandler: { [weak self] in
             MainActor.assumeIsolated {
