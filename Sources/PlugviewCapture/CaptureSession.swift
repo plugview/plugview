@@ -113,7 +113,7 @@ public final class CaptureSession: @unchecked Sendable {
         guard session.canAddOutput(audioOutput) else { throw CaptureError.cannotAdd(name: "audio output") }
         session.addOutput(audioOutput)
         audioOutput.volume = volume
-        requestLowLatencyAudioBuffers(inputUID: deviceID)
+        requestLowLatencyAudioBuffers()
         return audioDevice.localizedName
     }
 

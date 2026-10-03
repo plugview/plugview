@@ -76,7 +76,7 @@ public final class LatencyProbe: NSObject, AVCaptureVideoDataOutputSampleBufferD
             let audioOutput = AVCaptureAudioDataOutput()
             audioOutput.setSampleBufferDelegate(self, queue: queue)
             try add(audioOutput)
-            requestLowLatencyAudioBuffers(inputUID: audioDevice.uniqueID)
+            requestLowLatencyAudioBuffers()
         }
         // Last, so no later session change can reset the format before startRunning().
         return try videoDevice.lockFormat(choice: mode)
@@ -123,7 +123,7 @@ public final class LatencyProbe: NSObject, AVCaptureVideoDataOutputSampleBufferD
         print("         capture → app   \(spread(samples.video))")
 
         if let audio {
-            print("Audio    \(audio.localizedName) · buffer \(Tuning.audioBufferFrames) frames")
+            print("Audio    \(audio.localizedName)")
             print("         capture → app   \(spread(samples.audio))")
         } else {
             print("Audio    not measured (no audio input selected)")

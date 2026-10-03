@@ -27,7 +27,7 @@ thing: it opens the capture card and plays, with sound, at the lowest latency th
 ## Features
 
 - **Low latency.** Frames go straight from the capture driver to the GPU compositor. plugview never copies a
-  frame. It picks the card's native pixel format, keeps the frame rate locked, and uses 2.7 ms audio buffers.
+  frame. It picks the card's native pixel format, keeps the frame rate locked, and uses a 2.7 ms playback buffer.
   [Measured numbers](docs/PERFORMANCE.md).
 - **Smooth by default.** Prefers the highest frame rate: 1080p60 beats 4K30. Or pick any mode the card offers;
   the choice is remembered per card.

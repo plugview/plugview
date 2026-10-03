@@ -8,10 +8,10 @@ public enum Tuning {
     /// Frame rate at which motion counts as smooth for gaming.
     public static let smoothFrameRate = 50.0
 
-    /// Core Audio I/O buffer, in frames, requested for the card input and the playback device.
+    /// Core Audio I/O buffer, in frames, requested for the playback device.
     ///
-    /// 128 frames is 2.7 ms at 48 kHz. On an MS2130 card it cut capture latency from 12.4 ms (512) to 4.3 ms;
-    /// 64 frames caused irregular spikes.
+    /// 128 frames is 2.7 ms at 48 kHz; it cut speaker latency from 27 to 19 ms. 64 frames caused irregular spikes.
+    /// The card input keeps the default (see `requestLowLatencyAudioBuffers`).
     public static let audioBufferFrames: UInt32 = 128
 
     /// Volume change per arrow-key press, in percent.

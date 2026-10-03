@@ -21,7 +21,8 @@ see or change. Everything between the driver and the compositor is tuned below.
 | Keep the device locked until the session runs | `AVCaptureSession.startRunning()` otherwise resets the frame rate to the device default. | 20 → 60 fps; capture → app 56 → 18 ms |
 | Prefer the card's native packed 4:2:2 format (`yuvs`/`2vuy`) | `420v` makes macOS convert every frame. | 22.7 → 18.0 ms, ~17 % less CPU |
 | Prefer smooth frame rates (≥ 50 fps) over resolution | 1080p60 feels faster than 4K30. | — |
-| 128-frame Core Audio buffers on card input and playback | macOS defaults to 512 frames (10.7 ms at 48 kHz). 64 frames caused spikes. | Card audio 12.4 → 4.3 ms; speakers 27 → 19 ms |
+| 128-frame Core Audio buffer on playback | macOS defaults to 512 frames (10.7 ms at 48 kHz). 64 frames caused spikes. | Speakers 27 → 19 ms |
+| Card input keeps the default buffer | Resizing it (12.4 → 4.3 ms) crashed plugview inside Core Audio when the card was unplugged while playing on macOS 27. | Card audio back to the default (12.4 ms when measured for 0.1), still ahead of the ~20 ms video |
 | `userInteractive` capture queue and `latencyCritical` activity | Keeps App Nap and timer coalescing away from capture. | Not measured separately |
 | Display sleep disabled while the window is open | A controller is not keyboard/mouse input. | — |
 | Screenshot output attached but disabled | Its connection is enabled for one frame only, so no frame is copied while you play and the session is never reconfigured. | App CPU 5.6–8.5 % (0.2.0) vs 6.5–6.7 % (with it), 10 s windows at 1080p60: no difference |
