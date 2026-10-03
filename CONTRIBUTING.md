@@ -43,11 +43,17 @@ Sources/
     Window/                 The player window and key handling
     Resources/Info.plist    Embedded in the binary; holds the camera/microphone prompt texts
 Tests/PlugviewCoreTests/  Swift Testing suites for PlugviewCore
+  Spec/                     Runs the shared fixtures in spec/fixtures
+spec/                     Behavior every platform must match: rules (README.md) and JSON test fixtures
 docs/                     Performance notes and measurements
 ```
 
 **Rule of thumb:** a decision that can be tested without a capture card belongs in `PlugviewCore`. The
 `PlugviewCapture` and `plugview` targets turn framework objects into `PlugviewCore` values, ask it what to do, and do it.
+
+**Shared behavior lives in [`spec/`](spec/README.md).** The Windows and Linux apps are separate native ports that
+must decide exactly like the Mac. To change a rule (device choice, modes, launcher states, options, the update
+check), change its fixture in `spec/fixtures/` first, then the Swift code; `make check` fails until both agree.
 
 ## Code rules
 
