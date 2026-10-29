@@ -63,7 +63,7 @@ icon:
 	rm -rf $(DIST_DIR)/AppIcon.iconset && mkdir -p $(DIST_DIR)/AppIcon.iconset
 	for size in 16 32 128 256 512; do for scale in 1 2; do \
 		px=$$((size * scale)); name=icon_$${size}x$${size}; [ $$scale = 1 ] || name=$${name}@2x; \
-		rsvg-convert -w $$((px * 103 / 120)) $(DESIGN_DIR)/plugview-icon.svg \
+		rsvg-convert -w $$((px * 103 / 120)) $(DESIGN_DIR)/logo/svg/plugview-icon.svg \
 			| magick - -background none -gravity center -extent $${px}x$${px} $(DIST_DIR)/AppIcon.iconset/$$name.png || exit 1; \
 	done; done
 	iconutil -c icns -o $(ICON) $(DIST_DIR)/AppIcon.iconset
